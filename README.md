@@ -20,6 +20,8 @@
 
 実装・レビュー・差し戻しは Agent 同士で進める。
 
+レトロスペクティブには、スプリントに参加した全 Agent とスクラムマスターが参加し、それぞれ KPT を出す。Problem はなぜなぜ分析で根本原因まで掘り下げる。Try は5W1H と効果の確認方法を備えた施策として、チーム合意、DoD 変更案、改善 PBI、plugin への改善提案のいずれかに反映する。
+
 ## 導入
 ```
 /plugin marketplace add kalKun24/scrum-team
@@ -62,7 +64,9 @@ GitHub バックエンドを使う場合は `Bash(gh issue:*)`・`Bash(gh pr:*)`
   config.md              # バックエンド、容量、DoD
   inception-deck.md      # インセプションデッキ
   backlog.md             # Markdown バックエンドの場合のみ
-  agreements.md          # レトロで更新されるチーム合意
+  agreements.md          # レトロで更新されるチーム合意（Try）
+  metrics.md             # スプリントごとの指標
+  plugin-feedback.md     # レトロで出た scrum-team plugin への改善提案
   designs/<pbi-id>.md    # UI 仕様
   sprints/sprint-<N>.md  # スプリントの計画・進捗・結果
 ```

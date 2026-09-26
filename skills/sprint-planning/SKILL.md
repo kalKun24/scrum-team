@@ -19,12 +19,13 @@ description: 状態が ready の PBI から容量内でスプリントの対象�
    - バックエンドとフロントエンドを別の developer に分けるか。分ける場合は API 契約を誰が先に決めるか。
    - PBI 間の依存と、並列に進めてよい組み合わせ。
    - 依存する PBI はブランチを積み重ねること。積み重ねた場合、前の PBI を却下すると後ろの PBI もそのままマージできないこと。
-6. PO に次を示し、承認を求める：スプリントゴール、対象 PBI と合計ポイント、飛ばした PBI と理由、実行計画の要点。
+6. PO に次を示し、承認を求める：スプリントゴール、対象 PBI と合計ポイント、飛ばした PBI と理由、実行計画の要点。`.scrum/config.md` に `## DoD 変更案` があれば、その案ごとの採否もあわせて聞く。
 7. PO が修正を求めた場合は反映して再提示する。
 8. 承認後、次を行う。
    - `.scrum/sprints/sprint-<N>.md` を下記の書式で作成する。
    - `.scrum/config.md` の `sprint` を `N` にする。
    - 対象 PBI を `set_status(sprint)` にする。
+   - DoD 変更案のうち採用されたものを DoD に反映し、採否にかかわらず案を削除する。採否はスプリントファイルの「記録」に書く。
 
 ## スプリントファイルの書式
 ```
@@ -41,8 +42,13 @@ description: 状態が ready の PBI から容量内でスプリントの対象�
 ## 実行計画
 <依存と並列の組み合わせ>
 
+## Agent 実行ログ
+| PBI | Agent | 目的 | tokens | tool_uses | 所要時間 |
+|---|---|---|---|---|---|
+
 ## 記録
 <execution 以降で追記する>
 ```
 
+- 実行ログの「目的」は `design` / `implement` / `rework` / `review` / `retro` を使う。
 - 「状態」は `todo` / `design` / `dev` / `review` / `approved` / `blocked` / `accepted` / `rejected` を使う。

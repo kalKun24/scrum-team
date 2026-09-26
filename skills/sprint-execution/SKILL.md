@@ -10,6 +10,7 @@ description: 承認済みのスプリント計画に沿って designer・develop
 - スクラムマスター（メインセッション）は Agent の起動・結果の記録・差し戻しの判断のみを行い、自分で実装しない。
 - 各 Agent への依頼には、PBI の全文、`.scrum/config.md`・`.scrum/agreements.md`・`.scrum/inception-deck.md`・UI 仕様の絶対パス、`base_branch` を含める。worktree からも読めるよう、パスは必ず元のリポジトリの絶対パスにする。
 - Agent の結果を受け取るたびに、スプリントファイルの表と「記録」を更新する。
+- Agent を起動するたびに、結果に含まれる使用量（トークン数、ツール呼び出し数、所要時間）を、スプリントファイルの「Agent 実行ログ」に1行ずつ記録する。取得できない値は `不明` と書く。
 
 ## 手順
 1. スプリントファイルを読み、状態が `approved` / `blocked` 以外の PBI を処理対象とする。
@@ -31,4 +32,5 @@ description: 承認済みのスプリント計画に沿って designer・develop
 ## 記録に残す事項
 - 各 Agent の報告の `assumptions` と `unresolved`
 - 差し戻しの理由（レトロで使う）
+- レビュアーの指摘件数（must / should）と、その観点
 - `blocked` の理由
