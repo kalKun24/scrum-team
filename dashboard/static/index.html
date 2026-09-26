@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scrum Dashboard</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">Scrum Dashboard</div>
+  <div class="sprint" id="sprint-summary">—</div>
+  <div class="spacer"></div>
+  <div class="runner" id="runner-summary"></div>
+</header>
+<main class="layout">
+  <section class="col col-sm">
+    <h2>スクラムマスター</h2>
+    <div class="feed" id="sm-feed"></div>
+    <div class="composer" id="composer"></div>
+  </section>
+  <section class="col col-agents">
+    <div class="col-head">
+      <h2>Agent</h2>
+      <div class="chips" id="role-filter"></div>
+    </div>
+    <div class="agents" id="agents"></div>
+  </section>
+  <section class="col col-info">
+    <nav class="tabs" id="tabs"></nav>
+    <div class="tab-body" id="tab-body"></div>
+  </section>
+</main>
+<script src="/static/app.js"></script>
+</body>
+</html>

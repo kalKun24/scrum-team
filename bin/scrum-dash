@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# scrum-dash [プロジェクトのパス] [--port 8765] [--plugin-dir <path>] [--no-open]
+set -euo pipefail
+here="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+exec python3 "$here/dashboard/server.py" "$@"
