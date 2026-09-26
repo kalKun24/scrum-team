@@ -36,6 +36,24 @@ PO の判断が必要な場面は次の2点に限る。
 3. 再び `/scrum-team:run-sprint` を実行する。リファインメント → 計画 → 実行 → レビュー → レトロスペクティブの順に進む。
 4. 途中で中断しても、次に `/scrum-team:run-sprint` を実行すれば中断したフェーズから再開する。
 
+## 権限設定
+スプリント中、Agent は git とテストのコマンドを繰り返し実行する。確認のプロンプトで止まらないよう、対象プロジェクトの `.claude/settings.json` で許可しておくことを推奨する。テストと実行のコマンドはプロジェクトに合わせて書き換える。
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Bash(git:*)",
+      "Bash(ls:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm test:*)"
+    ]
+  }
+}
+```
+
+GitHub バックエンドを使う場合は `Bash(gh issue:*)`・`Bash(gh pr:*)`・`Bash(gh label:*)` も加える。
+
 ## 対象プロジェクトに作られるファイル
 ```
 .scrum/

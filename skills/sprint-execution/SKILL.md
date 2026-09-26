@@ -16,6 +16,8 @@ description: 承認済みのスプリント計画に沿って designer・develop
 2. デザイン：`ui: yes` で UI 仕様が無い PBI に `designer` を起動する。出力先は `.scrum/designs/<pbi-id>.md` とする。依存の無いものは並列に起動する。
 3. 実装：依存が解消した PBI に `developer` を起動する。
    - Agent tool の `isolation: "worktree"` を指定する。
+   - 依頼でブランチ名 `scrum/<pbi-id>` と分岐元を指定する。依存の無い PBI の分岐元は `base_branch` とする。未マージの PBI に依存する PBI の分岐元は、依存先のブランチとする。
+   - 分岐元を依存先のブランチにした場合は、スプリントファイルの「実行計画」に積み重ねの順序を書く。
    - 同時に動かす developer は3つまでとする。
    - 1つの PBI を2つの developer に分ける場合、バックエンド側を先に起動し、報告の API 契約をフロントエンド側の依頼に含める。2つ目は1つ目の作業ディレクトリで同じブランチに続けてコミットさせる（isolation は指定しない）。
    - `status: blocked` の報告は PBI を `blocked` にし、理由を記録して次へ進む。
