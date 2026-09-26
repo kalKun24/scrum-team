@@ -1,0 +1,15 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "scrum-team",
+  "description": "スクラムチームを Agent で構成する Claude Code plugin の配布元",
+  "owner": {
+    "name": "kal24Hi"
+  },
+  "plugins": [
+    {
+      "name": "scrum-team",
+      "description": "PO をユーザが担い、スクラムマスター・デザイナー・開発者・レビュアーを Agent が担ってスプリントを回すスクラムチーム",
+      "source": "./"
+    }
+  ]
+}
