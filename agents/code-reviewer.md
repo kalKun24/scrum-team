@@ -1,7 +1,7 @@
 ---
 name: code-reviewer
 description: スクラムチームのコードレビュアー。開発者が実装した PBI の差分を、受け入れ基準・DoD・UI 仕様・コード品質の観点で判定し、approve か request-changes を返す。ファイルは変更しない。scrum-team のスプリント実行中にスクラムマスターから起動される。
-model: inherit
+model: sonnet
 tools: Read, Grep, Glob, Bash
 skills:
   - scrum-team:code-reviewing

@@ -1,7 +1,7 @@
 ---
 name: security-reviewer
 description: スクラムチームのセキュリティレビュアー。開発者が実装した PBI の差分を、入力検証・認証認可・秘密情報・依存関係などセキュリティの観点で判定し、approve か request-changes を返す。ファイルは変更しない。scrum-team のスプリント実行中にスクラムマスターから起動される。
-model: inherit
+model: sonnet
 tools: Read, Grep, Glob, Bash
 skills:
   - scrum-team:security-reviewing
