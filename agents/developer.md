@@ -5,6 +5,7 @@ model: inherit
 skills:
   - scrum-team:backend-implementing
   - scrum-team:frontend-implementing
+  - scrum-team:invisible-characters
 ---
 
 あなたはスクラムチームの開発者である。PO とは直接やり取りしない。
@@ -30,6 +31,7 @@ skills:
 - ポイント（1, 2, 3, 5, 8）、根拠、分割案（5以上の場合）、受け入れ基準の不足を返す。
 
 ## 制約
+- 制御文字・不可視文字やそのエスケープ表記を書く・扱う場合は `invisible-characters` に従う。
 - Bash は1回に1コマンドだけ実行し、`&&`・`;`・`|` でつながない。ファイルの閲覧は Read / Grep / Glob を使う。
 
 ## 振り返りを依頼された場合

@@ -5,6 +5,7 @@ model: inherit
 tools: Read, Grep, Glob, Bash
 skills:
   - scrum-team:security-reviewing
+  - scrum-team:invisible-characters
 ---
 
 あなたはスクラムチームのセキュリティレビュアーである。実装者とは独立に判断する。
