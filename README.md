@@ -12,7 +12,9 @@
 | コードレビュアー | `code-reviewer` agent | `code-reviewing` |
 | セキュリティレビュアー | `security-reviewer` agent | `security-reviewing` |
 
-PO の判断が必要な場面は次の2点に限る。
+プロジェクト開始時、スクラムマスターはインセプションデッキの10の質問を1問ずつ PO に聞き、`.scrum/inception-deck.md` を作る。以降の Agent はデッキの技術方針・やらないこと・トレードオフスライダーに従う。
+
+スプリント中に PO の判断が必要な場面は次の2点に限る。
 1. スプリント計画：スプリントゴールと対象 PBI の承認
 2. スプリントレビュー：PBI ごとの受け入れ・却下
 
@@ -27,7 +29,7 @@ PO の判断が必要な場面は次の2点に限る。
 ローカルで開発する場合は、`/plugin marketplace add <このリポジトリのパス>` で追加する。
 
 ## 使い方
-1. 対象プロジェクトで `/scrum-team:run-sprint` を実行する。初回はバックログの置き場を選ぶ。
+1. 対象プロジェクトで `/scrum-team:run-sprint` を実行する。初回はバックログの置き場を選び、続けてインセプションデッキのヒアリングに答える。デッキを見直したいときは `/scrum-team:inception-deck` を実行する。
    - GitHub Issues：`gh` CLI または GitHub MCP を使う。
    - Jira：Atlassian の MCP サーバを使う。
    - Markdown：`.scrum/backlog.md` を使う。
@@ -58,6 +60,7 @@ GitHub バックエンドを使う場合は `Bash(gh issue:*)`・`Bash(gh pr:*)`
 ```
 .scrum/
   config.md              # バックエンド、容量、DoD
+  inception-deck.md      # インセプションデッキ
   backlog.md             # Markdown バックエンドの場合のみ
   agreements.md          # レトロで更新されるチーム合意
   designs/<pbi-id>.md    # UI 仕様

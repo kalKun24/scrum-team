@@ -13,7 +13,7 @@ description: 状態が ready の PBI から容量内でスプリントの対象�
 1. `.scrum/config.md` の `sprint` に1を足した値を今回のスプリント番号 `N` とする。
 2. `backlog-operations` の `list(ready)` を優先度順に取得する。
 3. 上から順に、合計ポイントが `capacity` を超えない範囲で選ぶ。未完了の PBI に依存する PBI は飛ばし、理由を記録する。
-4. 選んだ PBI 群から、スプリントゴールを1文で起案する。
+4. 選んだ PBI 群から、スプリントゴールを1文で起案する。`.scrum/inception-deck.md` の「我々はなぜここにいるのか」と「エレベーターピッチ」に沿わせる。
 5. PBI ごとに実行計画を立てる。
    - `ui: yes` なら designer を先に起動する。
    - バックエンドとフロントエンドを別の developer に分けるか。分ける場合は API 契約を誰が先に決めるか。

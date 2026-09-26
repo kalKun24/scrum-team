@@ -8,7 +8,7 @@ description: 承認済みのスプリント計画に沿って designer・develop
 ## 原則
 - PO には問い合わせない。PO の判断が要る事項は記録し、スプリントレビューで示す。
 - スクラムマスター（メインセッション）は Agent の起動・結果の記録・差し戻しの判断のみを行い、自分で実装しない。
-- 各 Agent への依頼には、PBI の全文、`.scrum/config.md`・`.scrum/agreements.md`・UI 仕様の絶対パス、`base_branch` を含める。worktree からも読めるよう、パスは必ず元のリポジトリの絶対パスにする。
+- 各 Agent への依頼には、PBI の全文、`.scrum/config.md`・`.scrum/agreements.md`・`.scrum/inception-deck.md`・UI 仕様の絶対パス、`base_branch` を含める。worktree からも読めるよう、パスは必ず元のリポジトリの絶対パスにする。
 - Agent の結果を受け取るたびに、スプリントファイルの表と「記録」を更新する。
 
 ## 手順

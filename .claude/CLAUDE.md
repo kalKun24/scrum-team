@@ -7,5 +7,6 @@
 - Skill 間・Agent 間で共有する語（PBI の状態名、スプリントファイルの `phase` と「状態」、判定書式の `verdict`）は、定義元のファイルと一致させる。
   - PBI の状態：`skills/backlog-operations/SKILL.md`
   - スプリントファイル：`skills/sprint-planning/SKILL.md`
+  - インセプションデッキの節名：`skills/inception-deck/questions.md`
   - 判定書式：`skills/code-reviewing/SKILL.md`、`skills/security-reviewing/SKILL.md`
 - 変更後は `claude plugin validate --strict .` と `claude plugin validate --strict skills` / `agents` を実行する。

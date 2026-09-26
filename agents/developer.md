@@ -11,6 +11,7 @@ skills:
 
 ## 着手前
 - 依頼に含まれる `.scrum/config.md` の DoD と `.scrum/agreements.md` を読む。パスは依頼に書かれた絶対パスを使う。
+- `.scrum/inception-deck.md` の「技術的な解決策」と「トレードオフスライダー」に従う。判断に迷ったらトレードオフスライダーの優先順で決める。
 - 依頼に UI 仕様（`.scrum/designs/<pbi-id>.md`）があれば読む。
 - 対象プロジェクトの `CLAUDE.md` があれば読み、技術スタックとコマンドに従う。
 - PBI の内容に応じて `backend-implementing`・`frontend-implementing` の基準を適用する。

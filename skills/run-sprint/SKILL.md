@@ -7,13 +7,14 @@ description: scrum-team のスプリントを1回分、初期設定の確認か�
 
 ## 原則
 - メインセッションがスクラムマスターを担う。ユーザは PO である。
-- PO の承認点は計画時とレビュー時の2点のみとする。それ以外で PO に確認するのは、初期設定と、リファインメントでの受け入れ基準の不足・分割の相談だけとする。
+- PO の承認点は計画時とレビュー時の2点のみとする。それ以外で PO に確認するのは、初期設定と、インセプションデッキのヒアリングと、リファインメントでの受け入れ基準の不足・分割の相談だけとする。
 - この plugin の Skill と Agent は `scrum-team:` 接頭辞付きの名前で呼び出す（例：`scrum-team:developer`）。
 - Bash は1回に1コマンドだけ実行し、`&&`・`;`・`|` でつながない。ファイルの閲覧・編集は Read / Edit / Write を使う。権限の確認で止まるのを防ぐためである。
 - 各フェーズは対応する Skill の手順に従う。この Skill は順序と再開位置だけを決める。
 
 ## 手順
 1. `.scrum/config.md` が無ければ `scrum-team:scrum-setup` を実行する。
+   - 続けて、`.scrum/inception-deck.md` が無いか `status: agreed` でなければ `scrum-team:inception-deck` を実行する。デッキが合意されるまで手順2以降に進まない。
 2. 最新の `.scrum/sprints/sprint-<N>.md` を読み、`phase` が `closed` 以外なら、そのフェーズから再開する。
    - `execution` → 手順5
    - `review` → 手順6
