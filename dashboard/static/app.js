@@ -323,6 +323,7 @@ function renderAgents() {
     const open = S.expanded.has(id) || (a.status === "running" && !S.collapsed.has(id));
     const tools = list.filter((m) => m.kind === "tool").length;
     const status = a.status === "running" ? `<span class="pill running"><span class="dot"></span>実行中</span>`
+      : a.status === "interrupted" ? `<span class="pill waiting"><span class="dot"></span>中断</span>`
       : `<span class="pill done"><span class="dot"></span>完了</span>`;
     const body = open ? `<div class="card-body" id="body-${esc(id)}">${list.map((m, k) => msgHtml(m, `${id}:${k}`)).join("") || '<p class="empty">出力なし</p>'}</div>` : "";
     return `<div class="card" style="--role:${roleColor(a.role)}">

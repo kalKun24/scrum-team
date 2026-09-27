@@ -47,6 +47,7 @@ class Hub:
         self.state_file = STATE_DIR / f"{encode_project_path(self.project)}.json"
         saved = self._load()
         self.interrupted = saved.get("interrupted") or saved.get("running_agents") or []
+        self.abandoned = set(saved.get("abandoned") or []) | {a["agent_id"] for a in self.interrupted}
         self.running_agents = []
         self.runner = Runner(self.project, plugin_dir, on_change=self._on_runner)
         self.runner.session_id = saved.get("session_id")
@@ -63,6 +64,7 @@ class Hub:
         data = {"project": str(self.project), "session_id": self.runner.session_id,
                 "status": self.runner.status, "denials": self.runner.denials,
                 "running_agents": self.running_agents, "interrupted": self.interrupted,
+                "abandoned": sorted(self.abandoned),
                 "updated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z")}
         self.state_file.parent.mkdir(parents=True, exist_ok=True)
         tmp = self.state_file.with_suffix(".tmp")
@@ -75,12 +77,14 @@ class Hub:
             return
         self.running_agents = [
             {k: a.get(k) for k in ("agent_id", "role", "description", "worktree")}
-            for a in self.watcher.agents.values() if a["status"] == "running"]
+            for a in self.watcher.agents.values()
+            if a["status"] == "running" and a["agent_id"] not in self.abandoned]
 
     def _on_runner(self, state):
         with self.cond:
             if state["status"] == "exited" and self.running_agents:
                 self.interrupted = self.running_agents
+                self.abandoned |= {a["agent_id"] for a in self.running_agents}
                 self.running_agents = []
             self.runner_state = {**state, "interrupted": self.interrupted}
             self.runner_version += 1
@@ -99,9 +103,16 @@ class Hub:
         if message or note:
             self.runner.send(note + (message or "続けて。"))
 
+    def mark_abandoned(self, events):
+        """中断した Agent は完了通知が来ないため、実行中ではなく中断として表示する。"""
+        for ev in events:
+            if ev["type"] == "agent" and ev["agent_id"] in self.abandoned and ev["status"] == "running":
+                ev["status"] = "interrupted"
+        return events
+
     def loop(self):
         while True:
-            events = self.watcher.poll()
+            events = self.mark_abandoned(self.watcher.poll())
             snapshot = self.scrum.poll()
             if events or snapshot is not None:
                 with self.cond:
@@ -163,7 +174,7 @@ class Handler(BaseHTTPRequestHandler):
             events = read_session(self.hub.project, session_id)
             if events is None:
                 return self._json(404, {"error": "not found"})
-            return self._json(200, {"events": events})
+            return self._json(200, {"events": self.hub.mark_abandoned(events)})
         return self._json(404, {"error": "not found"})
 
     def do_POST(self):
@@ -263,6 +274,7 @@ def main():
             hub._track_agents()
             if hub.running_agents and hub.runner.status in ("running", "waiting"):
                 hub.interrupted, hub.running_agents = hub.running_agents, []
+                hub.abandoned |= {a["agent_id"] for a in hub.interrupted}
             hub._save()
         hub.runner.stop()
         raise SystemExit(0)

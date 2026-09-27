@@ -27,5 +27,5 @@ description: スプリントの成果を PO に提示して受け入れ判定を
    - 受け入れた PBI：`set_status(done)`。Markdown では受け入れ基準を `[x]` にする。
    - 却下した PBI：`set_status(ready)` にし、却下理由を `comment` する。
    - `blocked` の PBI：`set_status(ready)` にし、理由を `comment` する。
-7. マージ済みの worktree を `git worktree remove` で削除する。却下・中断の worktree とブランチは残し、スプリントファイルに記録する。
+7. マージ済みの worktree を `git worktree remove` で削除する。中断から再開した PBI の worktree は、中断した Agent のロックが残っていることがある。ロックの理由に書かれた Agent が中断の記録にあれば、`git worktree unlock` してから削除する。却下・中断の worktree とブランチは残し、スプリントファイルに記録する。
 8. スプリントファイルに判定結果を記録し、`phase` を `retrospective` にする。`.scrum/` の変更を `base_branch` にコミットする。
