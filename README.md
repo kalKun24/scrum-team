@@ -98,6 +98,7 @@ GitHub Issues・Jira のバックログは、スクラムマスターが書き�
       "Agent",
       "SendMessage",
       "Bash(git:*)",
+      "Bash(date:*)",
       "Bash(ls:*)",
       "Bash(mkdir:*)",
       "Bash(npm test:*)"

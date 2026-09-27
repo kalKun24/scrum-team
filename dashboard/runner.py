@@ -40,7 +40,8 @@ class Runner:
             if resume:
                 cmd += ["--resume", resume]
             allowed = self._allowed_tools() + [
-                f"Bash(python3 {PLUGIN_ROOT}/skills/team-forming/install_agent.py:*)"]
+                f"Bash(python3 {PLUGIN_ROOT}/skills/team-forming/install_agent.py:*)",
+                "Bash(date:*)"]
             if allowed:
                 cmd += ["--allowedTools", *allowed]
             if self.plugin_dir:

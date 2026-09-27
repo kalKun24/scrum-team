@@ -102,10 +102,14 @@ class ScrumState:
         phase = _field(text, "phase")
         rel = str(path.relative_to(self.project))
         # 開始・終了の日時が書かれていない古いスプリントは、git の履歴で補う
-        closed = _field(text, "closed")
+        def iso(value):
+            # 注記が後ろに付いていても、日時の部分だけを取り出す
+            m = re.match(r"^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?)", value or "")
+            return m.group(1) if m else None
+        closed = iso(_field(text, "closed"))
         if not closed and phase == "closed":
             closed = self._git("log", "-1", "--format=%cI", "--", rel).strip() or None
-        started = _field(text, "started")
+        started = iso(_field(text, "started"))
         if not started:
             started = self._git("log", "--reverse", "--format=%cI", "--", rel).split("\n")[0] or None
         return {

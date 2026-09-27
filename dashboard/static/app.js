@@ -190,8 +190,17 @@ const CHEV = (up) => `<svg width="16" height="16" viewBox="0 0 16 16" fill="none
 
 // ---------- スプリントと期間 ----------
 const sc = () => S.scrum || {};
-const sprints = () => sc().sprints || [];
-const latestN = () => sc().latest;
+// 最新のスプリントが終わっていれば、次のスプリントの準備（リファインメント・計画）を受け持つ仮のスプリントを置く
+function sprints() {
+  const list = sc().sprints || [];
+  if (!sc().initialized) return list;
+  const top = list[0];
+  if (top && top.phase !== "closed") return list;
+  const virtual = { number: top ? top.number + 1 : 1, phase: "refinement", goal: null, started: null, closed: null,
+    pbis: [], agent_log: [], retro: null, team: sc().team && sc().team.length ? sc().team : null, virtual: true };
+  return [virtual, ...list];
+}
+const latestN = () => (sprints()[0] || {}).number;
 const selN = () => S.sprintSel ?? latestN();
 const isPast = () => S.sprintSel != null && S.sprintSel !== latestN();
 const sprintOf = (n) => sprints().find((x) => x.number === n) || null;
@@ -307,19 +316,19 @@ function renderSprintbar() {
   const m = (s.metrics_rows || []).find((r) => r.Sprint === String(sp.number));
   const pts = sp.pbis.reduce((a, r) => a + (Number(r.points) || 0), 0);
   let html = `<div style="flex:1;min-width:0"><div class="row-gap">
-      <h1><button type="button" class="switcher ${S.switcher ? "open" : ""}" data-action="switcher" aria-haspopup="listbox" aria-expanded="${S.switcher}">Sprint ${sp.number}${CHEV(S.switcher)}</button></h1>
+      <h1><button type="button" class="switcher ${S.switcher ? "open" : ""}" data-action="switcher" aria-haspopup="listbox" aria-expanded="${S.switcher}">Sprint ${sp.number}${sp.virtual ? '<span class="state po" style="font-family:inherit;font-size:12px">準備中</span>' : ""}${CHEV(S.switcher)}</button></h1>
       <span class="muted">${pts}pt / 容量 ${esc(s.capacity || "—")}pt${sp.closed ? ` · ${day(sp.closed)} に終了` : ""}${m ? ` · 受け入れ率 ${esc(m["受け入れ率"])}` : ""}</span></div>
-      <p class="goal">${inline(sp.goal || "")}</p></div>${stepperHtml(sp)}`;
+      <p class="goal">${sp.virtual ? "準備中。スプリント計画が承認されると、ゴールと対象の PBI が決まる。" : inline(sp.goal || "")}</p></div>${stepperHtml(sp)}`;
   if (S.switcher) html += switcherMenu();
   put(el, html, html);
 }
 function switcherMenu() {
   const rows = sprints().map((sp) => {
     const m = (sc().metrics_rows || []).find((r) => r.Sprint === String(sp.number)) || {};
-    const note = sp.phase !== "closed" ? `<span style="color:var(--po-ink);font-weight:700">${esc((PHASES.find(([k]) => k === sp.phase) || [0, sp.phase])[1])}中</span>`
+    const note = sp.virtual ? '<span style="color:var(--po-ink);font-weight:700">準備中</span>' : sp.phase !== "closed" ? `<span style="color:var(--po-ink);font-weight:700">${esc((PHASES.find(([k]) => k === sp.phase) || [0, sp.phase])[1])}中</span>`
       : m["blocked"] && m["blocked"] !== "0" ? `blocked ${esc(m["blocked"])}` : (sp.agent_log || []).some((r) => /中断/.test(r["目的"] || "")) ? "中断から再開" : "";
     return `<button type="button" class="row" role="option" aria-selected="${sp.number === selN()}" data-sprint="${sp.number === latestN() ? "" : sp.number}">
-      <b>Sprint ${sp.number}</b><span class="ellipsis">${inline(sp.goal || "")}</span><span>${day(sp.closed || sp.started)}</span>
+      <b>Sprint ${sp.number}</b><span class="ellipsis">${sp.virtual ? "リファインメント・計画" : inline(sp.goal || "")}</span><span>${day(sp.closed || sp.started)}</span>
       <span>${m["実績pt"] ? `${esc(m["実績pt"])} / ${esc(m["計画pt"])}` : "—"}</span><span>${esc(m["受け入れ率"] || "—")}</span><span class="small muted">${note}</span></button>`;
   }).join("");
   const firstTeam = sprints().filter((sp) => sp.team && sp.team.length).map((sp) => sp.number).pop();
@@ -459,7 +468,9 @@ function renderSprint(el) {
         return `<span><span class="bar" style="background:${done || now ? (slot === "po" ? "var(--po-line)" : color(slot)) : "var(--chip)"}"></span>${name}${done ? " ✓" : ""}</span>`; }).join("");
     return `<div class="pbi-card"><div class="row-gap"><span class="mono muted">${esc(row.PBI)} · ${esc(row.points)}pt</span><b style="flex:1">${inline(item.title || "")}</b><span class="state ${cls}">${esc(label)}</span></div>
       <div class="stages" style="grid-template-columns:repeat(${ui ? 4 : 3},minmax(0,1fr))">${stages}</div></div>`;
-  }).join("") || '<p class="empty">このスプリントの PBI はまだ無い。</p>';
+  }).join("") || (sp && sp.virtual
+    ? (sc().backlog || []).filter((b) => ["new", "ready"].includes(b.status)).map((b) => `<div class="pbi-card"><div class="row-gap"><span class="mono muted">${esc(b.id)}${b.points ? ` · ${esc(b.points)}pt` : ""}</span><b style="flex:1">${inline(b.title)}</b><span class="state ${b.status === "ready" ? "ok" : ""}">${b.status === "ready" ? "精査済み" : "精査中"}</span></div></div>`).join("") || '<p class="empty">精査中の PBI は無い。バックログに PBI を追加する。</p>'
+    : '<p class="empty">このスプリントの PBI はまだ無い。</p>');
   const team = members(sp, invs);
   const selected = S.selected && invs.find((i) => i.agent_id === S.selected) ? S.selected : (invs.filter((i) => !isRetro(i)).pop() || invs[invs.length - 1] || {}).agent_id;
   const cards = team.list.map((m) => {
@@ -477,10 +488,10 @@ function renderSprint(el) {
   const next = (sc().backlog || []).filter((b) => ["new", "ready"].includes(b.status)).slice(0, 3)
     .map((b) => `<div class="panel row-gap" style="padding:10px 12px;font-size:13px"><span class="mono muted">${esc(b.id)}</span><span style="flex:1">${inline(b.title)}</span><span class="state">${esc(b.status)}</span></div>`).join("");
   put($("c2"), JSON.stringify([sp && sp.pbis, invs.map((i) => [i.agent_id, i.status, i.msgs.length]), selected, sc().backlog, sc().team]),
-    `<h2 class="h2">このスプリントの PBI<button type="button" class="link link-btn" data-view="board">ボードで見る</button></h2>${pbiCards}
+    `<h2 class="h2">${sp && sp.virtual ? "次のスプリントの候補" : "このスプリントの PBI"}<button type="button" class="link link-btn" data-view="board">ボードで見る</button></h2>${pbiCards}
      <h2 class="h2" style="margin-top:8px">チーム${team.fixed && team.list.length ? '<span class="small muted" style="font-family:inherit;font-weight:400">固定 Agent</span>' : ""}</h2>
      <div class="team">${cards || '<p class="empty">まだ Agent は動いていない。</p>'}</div>
-     ${next ? `<h2 class="h2" style="margin-top:8px">次のスプリント候補</h2>${next}` : ""}`);
+     ${next && !(sp && sp.virtual) ? `<h2 class="h2" style="margin-top:8px">次のスプリント候補</h2>${next}` : ""}`);
   renderDetail($("c3"), invs.find((i) => i.agent_id === selected), sp);
 }
 function renderDetail(el, inv, sp) {

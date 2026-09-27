@@ -43,5 +43,5 @@ description: スプリントの指標を集計し、スプリントに参加し�
    - 容量：変更案を報告に含める。
 7. **記録と報告**
    - スプリントファイルの末尾に、formats.md の「スプリントファイルへの記録」の書式で書く。
-   - `phase` を `closed` にし、`- closed: <現在日時（ISO 8601、タイムゾーン付き）>` を `phase` の行の下に書き、`.scrum/` を `base_branch` にコミットする。
+   - `phase` を `closed` にし、`- closed: <`date -Iseconds` の出力>` を `phase` の行の下に書き、`.scrum/` を `base_branch` にコミットする。
    - PO に、指標の要点、各 Try（行き先を含む）、DoD 変更案、チーム編成の変更案、追加した改善 PBI を報告する。

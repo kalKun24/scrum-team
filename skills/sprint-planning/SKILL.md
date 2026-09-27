@@ -32,7 +32,7 @@ description: 状態が ready の PBI から容量内でスプリントの対象�
 # Sprint <N>
 - phase: execution
 - goal: <スプリントゴール>
-- started: <計画の承認日時（ISO 8601、タイムゾーン付き）>
+- started: <計画の承認日時。`date -Iseconds` の出力をそのまま書く>
 - base_branch: <base_branch>
 
 ## 対象 PBI
