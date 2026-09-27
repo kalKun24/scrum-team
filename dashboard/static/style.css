@@ -10,12 +10,12 @@
   --warn: #b54708;
   --warn-soft: #fff4e5;
   --ok: #067647;
-  --role-sm: #475467;
-  --role-designer: #7a3cf0;
-  --role-developer: #2f6fed;
-  --role-code-reviewer: #0e8a7a;
-  --role-security-reviewer: #d1432b;
-  --role-general: #7d8595;
+  --slot-design: #7a3cf0;
+  --slot-implement: #2f6fed;
+  --slot-code-review: #0e8a7a;
+  --slot-security-review: #d1432b;
+  --slot-extra-review: #b54708;
+  --slot-general: #7d8595;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 @media (prefers-color-scheme: dark) {
@@ -31,12 +31,12 @@
     --warn: #f5a524;
     --warn-soft: #3a2a10;
     --ok: #47cd89;
-    --role-sm: #98a2b3;
-    --role-designer: #a98bff;
-    --role-developer: #6b9bff;
-    --role-code-reviewer: #3cc7b4;
-    --role-security-reviewer: #ff7a63;
-    --role-general: #98a2b3;
+    --slot-design: #a98bff;
+    --slot-implement: #6b9bff;
+    --slot-code-review: #3cc7b4;
+    --slot-security-review: #ff7a63;
+    --slot-extra-review: #f5a524;
+    --slot-general: #98a2b3;
   }
 }
 * { box-sizing: border-box; }

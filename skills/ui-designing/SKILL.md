@@ -1,6 +1,6 @@
 ---
 name: ui-designing
-description: UI を含む PBI の UI 仕様を実装前に書く際の判断基準と出力書式。画面構成・状態・操作・エラー表示・アクセシビリティを定義する。scrum-team の designer が使う。
+description: UI を含む PBI の UI 仕様を実装前に書く際の判断基準と出力書式。画面構成・状態・操作・エラー表示・アクセシビリティを定義する。scrum-team の design 枠の Agent が使う。
 ---
 
 # UI 仕様の作成

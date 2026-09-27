@@ -41,10 +41,11 @@ description: 対象プロジェクトで scrum-team を使い始めるための�
 ## Definition of Done
 - 受け入れ基準をすべて満たし、各基準に対応するテストがある
 - 既存を含むすべてのテストが通る
-- code-reviewer と security-reviewer が approve している
+- code-review 枠と security-review 枠（extra-review 枠がいればそれも）の Agent が approve している
 - UI を含む PBI は UI 仕様と一致している
 ```
 
 ## 作成するその他のファイル
 - `.scrum/agreements.md`：見出し `# チーム合意` のみ。
 - `.scrum/sprints/`・`.scrum/designs/`：空ディレクトリ（`.gitkeep` を置く）。
+- `.claude/agents/`：空ディレクトリ（`.gitkeep` を置く）。セッションの開始時にこのディレクトリが無いと、後で取り込んだ Agent をそのセッションで使えないためである。

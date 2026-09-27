@@ -1,6 +1,6 @@
 ---
 name: code-reviewing
-description: PBI の実装差分をコードレビューする際の観点と判定書式。受け入れ基準の充足、DoD、UI 仕様との一致、設計・可読性・テストを判定し、approve か request-changes を返す。scrum-team の code-reviewer が使う。
+description: PBI の実装差分をコードレビューする際の観点と判定書式。受け入れ基準の充足、DoD、UI 仕様との一致、設計・可読性・テストを判定し、approve か request-changes を返す。scrum-team の code-review 枠・extra-review 枠の Agent が使う。
 ---
 
 # コードレビュー
@@ -22,7 +22,7 @@ description: PBI の実装差分をコードレビューする際の観点と判
 `must` が1件でもあれば `request-changes`、無ければ `approve` とする。
 
 ```
-reviewer: code-reviewer
+reviewer: <自分の Agent 名>
 pbi: <pbi-id>
 verdict: approve | request-changes
 tests: <実行したコマンドと結果>

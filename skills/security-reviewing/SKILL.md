@@ -1,6 +1,6 @@
 ---
 name: security-reviewing
-description: PBI の実装差分をセキュリティの観点でレビューする際の観点と判定書式。入力検証、認証認可、秘密情報、データ露出、依存関係を判定し、approve か request-changes を返す。scrum-team の security-reviewer が使う。
+description: PBI の実装差分をセキュリティの観点でレビューする際の観点と判定書式。入力検証、認証認可、秘密情報、データ露出、依存関係を判定し、approve か request-changes を返す。scrum-team の security-review 枠の Agent が使う。
 ---
 
 # セキュリティレビュー
@@ -23,7 +23,7 @@ description: PBI の実装差分をセキュリティの観点でレビューす
 `must` が1件でもあれば `request-changes`、無ければ `approve` とする。
 
 ```
-reviewer: security-reviewer
+reviewer: <自分の Agent 名>
 pbi: <pbi-id>
 verdict: approve | request-changes
 checks: <実行した監査コマンドと結果>

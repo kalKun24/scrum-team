@@ -1,6 +1,6 @@
 ---
 name: sprint-retrospective
-description: スプリントの指標を集計し、スプリントに参加した全 Agent とスクラムマスターがそれぞれ KPT で振り返り、Problem の根本原因を掘り下げて、5W1H で具体化した Try をチーム合意・DoD 変更案・改善 PBI・plugin への改善提案に反映する。scrum-team のスプリントレビューが終わったとき、またはスプリントファイルの phase が retrospective のときに使う。
+description: スプリントの指標を集計し、スプリントに参加した全 Agent とスクラムマスターがそれぞれ KPT で振り返り、Problem の根本原因を掘り下げて、5W1H で具体化した Try をチーム合意・DoD 変更案・改善 PBI・チーム編成の変更案・plugin への改善提案に反映する。scrum-team のスプリントレビューが終わったとき、またはスプリントファイルの phase が retrospective のときに使う。
 ---
 
 # スプリントレトロスペクティブ
@@ -23,7 +23,7 @@ description: スプリントの指標を集計し、スプリントに参加し�
    - `効果なし` の項目は、根本原因の見立てが誤っていたとみなし、手順4で再分析の対象にする。
    - 3スプリント以上、関係する事象が起きていない項目は削除候補にする。
 3. **各メンバーの KPT**
-   - このスプリントで起動された Agent の種類ごとに1つずつ、「振り返りのみ」の依頼で並列に起動する。対象は `designer`、`developer`、`code-reviewer`、`security-reviewer` のうち、実際に起動されたものである。isolation は指定しない。
+   - `.scrum/team.md` の Agent のうち、このスプリントで起動されたものを1つずつ、「振り返りのみ」の依頼で並列に起動する。isolation は指定しない。
    - 依頼には formats.md の「メンバーへの依頼」の内容をすべて含める。
    - スクラムマスターも同じ書式で自分の KPT を書く。観点は進行、依頼の出し方、計画の精度である。
 4. **統合と根本原因分析**
@@ -37,10 +37,11 @@ description: スプリントの指標を集計し、スプリントに参加し�
 6. **反映**
    - チーム合意：`.scrum/agreements.md` に formats.md の書式で追記・書き換え・削除する。
    - DoD 変更案：`.scrum/config.md` の `## DoD 変更案` 節に追記する。
+   - チーム編成の変更案：`.scrum/team.md` の `## 変更案` 節に、追加・交代・削除する枠と Agent の候補、理由を追記する。
    - 改善 PBI：`backlog-operations` の `create` で `new` の PBI を作り、`comment` に `retro: Sprint <N>` と根本原因を書く。
    - plugin への改善提案：`.scrum/plugin-feedback.md` に追記する。
    - 容量：変更案を報告に含める。
 7. **記録と報告**
    - スプリントファイルの末尾に、formats.md の「スプリントファイルへの記録」の書式で書く。
    - `phase` を `closed` にし、`.scrum/` を `base_branch` にコミットする。
-   - PO に、指標の要点、各 Try（行き先を含む）、DoD 変更案、追加した改善 PBI を報告する。
+   - PO に、指標の要点、各 Try（行き先を含む）、DoD 変更案、チーム編成の変更案、追加した改善 PBI を報告する。

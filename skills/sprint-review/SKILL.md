@@ -21,7 +21,7 @@ description: スプリントの成果を PO に提示して受け入れ判定を
    - `backend: github`：ブランチを push し、`gh pr create --base <base_branch> --head scrum/<pbi-id>` でレビュー結果を本文に含めた PR を作り、`gh pr merge --merge --delete-branch` でマージする。
    - それ以外：`git merge --no-ff scrum/<pbi-id>` でマージする。
    - ブランチを積み重ねた PBI は、積み重ねの順にマージする。前の PBI が却下された場合、後ろの PBI はマージせず、却下と同じ扱いにする。理由には「依存先の却下」と書く。
-   - 競合した場合：自明なもの（import の並び等）はスクラムマスターが解消する。そうでなければ developer に解消させ、両レビュアーの再判定を経てからマージする。
+   - 競合した場合：自明なもの（import の並び等）はスクラムマスターが解消する。そうでなければ implement 枠の Agent に解消させ、レビュー枠の全員の再判定を経てからマージする。
 5. すべてのマージ後にテストを実行し、テスト数をスプリントファイルの「記録」に書く。失敗した場合は PO に報告し、対応を確認する。
 6. バックログを更新する。
    - 受け入れた PBI：`set_status(done)`。Markdown では受け入れ基準を `[x]` にする。

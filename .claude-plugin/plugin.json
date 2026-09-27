@@ -1,6 +1,6 @@
 {
   "name": "scrum-team",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "PO をユーザが担い、スクラムマスター・デザイナー・開発者・レビュアーを Agent が担ってスプリントを回すスクラムチーム",
   "author": {
     "name": "kal24Hi"

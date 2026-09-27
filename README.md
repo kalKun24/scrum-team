@@ -7,12 +7,24 @@
 |---|---|---|
 | プロダクトオーナー | ユーザ | — |
 | スクラムマスター | メインセッション | `run-sprint` ほか運営 Skill |
-| デザイナー | `designer` agent | `ui-designing` |
-| 開発者 | `developer` agent | `backend-implementing` / `frontend-implementing` |
-| コードレビュアー | `code-reviewer` agent | `code-reviewing` |
-| セキュリティレビュアー | `security-reviewer` agent | `security-reviewing` |
+| チームの Agent | カタログから選んで編成する | `scrum-protocol` と枠ごとの Skill |
 
-プロジェクト開始時、スクラムマスターはインセプションデッキの10の質問を1問ずつ PO に聞き、`.scrum/inception-deck.md` を作る。以降の Agent はデッキの技術方針・やらないこと・トレードオフスライダーに従う。
+チームの Agent は固定しない。プロジェクト開始時に次の順で決める。
+1. スクラムマスターがインセプションデッキの10の質問を1問ずつ PO に聞き、`.scrum/inception-deck.md` を作る。
+2. スクラムマスターがデッキをもとに、同梱のカタログ（`catalog/`）から枠ごとの Agent を提案し、PO が承認する。承認された Agent は対象プロジェクトの `.claude/agents/` に取り込まれ、`.scrum/team.md` に記録される。
+
+| 枠 | 必須 | 付与される Skill |
+|---|---|---|
+| implement（実装） | 必須・1〜2 | `backend-implementing` / `frontend-implementing` |
+| design（デザイン） | UI がある場合 | `ui-designing` |
+| code-review（コードレビュー） | 必須 | `code-reviewing` |
+| security-review（セキュリティレビュー） | 必須 | `security-reviewing` |
+| extra-review（専門レビュー） | 任意 | `code-reviewing` |
+
+取り込むときに、すべての Agent に `scrum-protocol`（報告書式、ブランチ、優先順位などの共通手順）と `invisible-characters` を付ける。レビュー枠は書き込み権限を外し、モデルは sonnet に揃える。チーム編成は振り返りの Try から見直せる。
+
+## カタログ
+`catalog/` は [VoltAgent/awesome-claude-code-subagents](https://github.com/VoltAgent/awesome-claude-code-subagents)（MIT）の Agent 定義を取り込んだものである。取り込み元のコミットは `catalog/SOURCE.md`、一覧は `catalog/INDEX.md` にある。更新するときは `scripts/update-catalog.py [--ref <branch|sha>]` を実行し、差分を確かめてからコミットする。
 
 スプリント中に PO の判断が必要な場面は次の2点に限る。
 1. スプリント計画：スプリントゴールと対象 PBI の承認
@@ -20,7 +32,7 @@
 
 実装・レビュー・差し戻しは Agent 同士で進める。
 
-レトロスペクティブには、スプリントに参加した全 Agent とスクラムマスターが参加し、それぞれ KPT を出す。Problem はなぜなぜ分析で根本原因まで掘り下げる。Try は5W1H と効果の確認方法を備えた施策として、チーム合意、DoD 変更案、改善 PBI、plugin への改善提案のいずれかに反映する。
+レトロスペクティブには、スプリントに参加した全 Agent とスクラムマスターが参加し、それぞれ KPT を出す。Problem はなぜなぜ分析で根本原因まで掘り下げる。Try は5W1H と効果の確認方法を備えた施策として、チーム合意、DoD 変更案、改善 PBI、チーム編成の変更案、plugin への改善提案のいずれかに反映する。
 
 ## 導入
 ```
@@ -96,6 +108,7 @@ GitHub バックエンドを使う場合は `Bash(gh issue:*)`・`Bash(gh pr:*)`
 ```
 .scrum/
   config.md              # バックエンド、容量、DoD
+  team.md                # チーム編成（枠・Agent・出典・選定理由）
   inception-deck.md      # インセプションデッキ
   backlog.md             # Markdown バックエンドの場合のみ
   agreements.md          # レトロで更新されるチーム合意（Try）

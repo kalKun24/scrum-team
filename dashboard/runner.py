@@ -39,13 +39,16 @@ class Runner:
                    "--permission-mode", "acceptEdits", "--permission-prompts", "none"]
             if resume:
                 cmd += ["--resume", resume]
-            allowed = self._allowed_tools()
+            allowed = self._allowed_tools() + [
+                f"Bash(python3 {PLUGIN_ROOT}/skills/team-forming/install_agent.py:*)"]
             if allowed:
                 cmd += ["--allowedTools", *allowed]
             if self.plugin_dir:
                 cmd += ["--plugin-dir", str(self.plugin_dir)]
             # Skill の参照ファイルは作業ディレクトリの外にあり、確認なしでは読めないため追加する
             cmd += ["--add-dir", str(PLUGIN_ROOT)]
+            # セッションの開始時に無いと、途中で取り込んだ Agent をそのセッションで使えない
+            (self.project / ".claude" / "agents").mkdir(parents=True, exist_ok=True)
             log_dir = Path.home() / ".cache" / "scrum-dash"
             log_dir.mkdir(parents=True, exist_ok=True)
             log = open(log_dir / f"{self.project.name}.log", "a", encoding="utf-8")

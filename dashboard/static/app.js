@@ -1,13 +1,12 @@
 "use strict";
 
 const TOKEN = new URLSearchParams(location.search).get("t") || "";
-const ROLES = ["sm", "designer", "developer", "code-reviewer", "security-reviewer"];
-const ROLE_LABEL = {
-  sm: "スクラムマスター", designer: "designer", developer: "developer",
-  "code-reviewer": "code-reviewer", "security-reviewer": "security-reviewer",
+const SLOT_LABEL = {
+  implement: "実装", design: "デザイン", "code-review": "コードレビュー",
+  "security-review": "セキュリティレビュー", "extra-review": "専門レビュー",
 };
 const TABS = [
-  ["sprint", "スプリント"], ["retro", "振り返り"], ["agreements", "チーム合意"],
+  ["sprint", "スプリント"], ["team", "チーム"], ["retro", "振り返り"], ["agreements", "チーム合意"],
   ["metrics", "指標"], ["deck", "デッキ"], ["feedback", "改善提案"], ["denials", "拒否された操作"],
 ];
 const REQUEST_LINES = 8;
@@ -165,8 +164,17 @@ function time(ts) {
   const d = new Date(ts);
   return isNaN(d) ? "" : d.toLocaleTimeString("ja-JP", { hour12: false });
 }
+function slotOf(role) {
+  const row = ((S.scrum && S.scrum.team) || []).find((r) => r["Agent"] === role);
+  return row ? row["枠"] : null;
+}
 function roleColor(role) {
-  return `var(--role-${ROLES.includes(role) ? role : "general"})`;
+  const slot = slotOf(role);
+  return `var(--slot-${slot && SLOT_LABEL[slot] ? slot : "general"})`;
+}
+function roleLabel(role) {
+  const slot = slotOf(role);
+  return slot ? `${role}（${SLOT_LABEL[slot] || slot}）` : role;
 }
 function nearBottom(el) { return el.scrollHeight - el.scrollTop - el.clientHeight < 40; }
 
@@ -303,7 +311,7 @@ function renderComposer() {
 function renderFilter() {
   const roles = ["all", ...new Set(V().order.map((id) => V().agents.get(id).role))];
   $("role-filter").innerHTML = roles.map((r) =>
-    `<button class="chip ${S.filter === r ? "on" : ""}" data-filter="${esc(r)}">${r === "all" ? "すべて" : esc(ROLE_LABEL[r] || r)}</button>`).join("");
+    `<button class="chip ${S.filter === r ? "on" : ""}" data-filter="${esc(r)}">${r === "all" ? "すべて" : esc(roleLabel(r))}</button>`).join("");
 }
 
 function firstTs(id) {
@@ -328,7 +336,7 @@ function renderAgents() {
     const body = open ? `<div class="card-body" id="body-${esc(id)}">${list.map((m, k) => msgHtml(m, `${id}:${k}`)).join("") || '<p class="empty">出力なし</p>'}</div>` : "";
     return `<div class="card" style="--role:${roleColor(a.role)}">
       <div class="card-head" data-toggle="${esc(id)}">
-        <span class="role">${esc(ROLE_LABEL[a.role] || a.role)}</span>
+        <span class="role">${esc(roleLabel(a.role))}</span>
         <span class="card-title" title="${esc(a.description)}">${esc(a.description)}</span>
         <span class="hint">操作 ${tools}</span>${status}
       </div>${body}</div>`;
@@ -391,6 +399,8 @@ function renderTabs() {
   } else if (S.tab === "retro") {
     const sp = selectedSprint(sc);
     html = sprintPicker(sc, sp) + mdOr(sp.retro, "このスプリントの振り返りはまだ無い。");
+  } else if (S.tab === "team") {
+    html = mdOr(sc.team_markdown, "チーム編成はまだ無い。インセプションデッキの後にスクラムマスターが提案する。");
   } else if (S.tab === "agreements") {
     html = mdOr(sc.agreements, "チーム合意はまだ無い。");
   } else if (S.tab === "metrics") {

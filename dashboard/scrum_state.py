@@ -109,4 +109,6 @@ class ScrumState:
             "metrics": _read(self.root / "metrics.md"),
             "inception_deck": _read(self.root / "inception-deck.md"),
             "plugin_feedback": _read(self.root / "plugin-feedback.md"),
+            "team": _table(_read(self.root / "team.md")),
+            "team_markdown": _read(self.root / "team.md"),
         }

@@ -1,18 +1,18 @@
 ---
 name: backlog-refinement
-description: 状態が new の PBI を精査し、developer に見積もらせ、大きすぎる PBI の分割案と受け入れ基準の不足を PO への質問としてまとめ、ready にする。scrum-team のスプリント計画の前、または PO がバックログを追加・変更したときに使う。
+description: 状態が new の PBI を精査し、implement 枠の Agent に見積もらせ、大きすぎる PBI の分割案と受け入れ基準の不足を PO への質問としてまとめ、ready にする。scrum-team のスプリント計画の前、または PO がバックログを追加・変更したときに使う。
 ---
 
 # バックログリファインメント
 
 ## 原則
-- スクラムマスター（メインセッション）が進行し、見積りは `developer` に任せる。
+- スクラムマスター（メインセッション）が進行し、見積りは `.scrum/team.md` の implement 枠の Agent に任せる。
 - PO への質問は1回にまとめて聞く。PBI ごとに何度も止めない。
 - PBI の本文は PO の承認なしに書き換えない。
 
 ## 手順
 1. `backlog-operations` の `list(new)` で対象を取得する。0件なら終了する。
-2. `developer` を「見積りのみ」の依頼で起動する。依頼には対象 PBI 全件、`.scrum/config.md` と `.scrum/agreements.md` の絶対パスを含める。PBI が多い場合は数件ずつに分けて並列に起動してよい。
+2. implement 枠の Agent を「見積りのみ」の依頼で起動する。依頼には対象 PBI 全件、`.scrum/config.md` と `.scrum/agreements.md` の絶対パスを含める。PBI が多い場合は数件ずつに分けて並列に起動してよい。
 3. 各 PBI の `ui` を判定する。画面・コンポーネント・文言の追加や変更を含めば `yes` とする。
 4. 結果を PBI ごとに次のいずれかに分類する。
    - そのまま `ready` にできる。
