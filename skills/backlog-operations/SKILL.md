@@ -35,6 +35,10 @@ description: プロダクトバックログの PBI を取得・作成・更新�
 
 PO が却下した PBI は `ready` に戻し、却下理由をコメントに書く。
 
+## バックログの写し
+- バックエンドが `markdown` 以外の場合、`list` の結果を得たとき、および `create`・`set_status`・`set_fields`・`close_as_split` を行ったあとに、バックログ全体の写しを `.scrum/backlog-snapshot.json` に書き出す。ダッシュボードはこの写しを表示する（外部サービスの認証情報を持たないため）。
+- 書式：`{"updated_at": "<ISO 8601>", "items": [{"id", "title", "status", "points", "ui", "url"}]}`。`items` は優先度順に並べ、`url` は Issue・課題の URL とする。
+
 ## 操作
 - `list(status)`：指定状態の PBI を優先度順に取得する。
 - `get(id)`：PBI を1件取得する。

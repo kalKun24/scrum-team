@@ -6,6 +6,7 @@ import mimetypes
 import re
 import secrets
 import signal
+import subprocess
 import threading
 import time
 import webbrowser
@@ -49,6 +50,7 @@ class Hub:
         self.interrupted = saved.get("interrupted") or saved.get("running_agents") or []
         self.abandoned = set(saved.get("abandoned") or []) | {a["agent_id"] for a in self.interrupted}
         self.running_agents = []
+        self._pr_cache = {}
         self.runner = Runner(self.project, plugin_dir, on_change=self._on_runner)
         self.runner.session_id = saved.get("session_id")
         self.runner.denials = saved.get("denials") or []
@@ -102,6 +104,38 @@ class Hub:
         self.runner.start(resume=target)
         if message or note:
             self.runner.send(note + (message or "続けて。"))
+
+    def pr_status(self, branch):
+        """GitHub の PR とチェックの状態を、ローカルの gh で読む。1分間キャッシュする。"""
+        state = self.scrum.snapshot or {}
+        repo = state.get("github_repo")
+        if state.get("backend") != "github" or not repo or not re.fullmatch(r"[\w./-]{1,100}", branch or ""):
+            return {"available": False}
+        cached = self._pr_cache.get(branch)
+        if cached and time.time() - cached[0] < 60:
+            return cached[1]
+        try:
+            out = subprocess.run(["gh", "pr", "list", "-R", repo, "--head", branch, "--state", "all",
+                                  "--json", "number,url,state,statusCheckRollup", "--limit", "1"],
+                                 capture_output=True, text=True, timeout=15)
+            prs = json.loads(out.stdout) if out.returncode == 0 else []
+        except (OSError, ValueError, subprocess.TimeoutExpired):
+            prs = []
+        result = {"available": True, "pr": None}
+        if prs:
+            pr = prs[0]
+            checks = [c.get("conclusion") or c.get("state") or c.get("status") for c in pr.get("statusCheckRollup") or []]
+            if not checks:
+                check = "none"
+            elif any(c in ("FAILURE", "ERROR", "TIMED_OUT", "CANCELLED") for c in checks):
+                check = "failure"
+            elif all(c in ("SUCCESS", "NEUTRAL", "SKIPPED") for c in checks):
+                check = "success"
+            else:
+                check = "pending"
+            result["pr"] = {"number": pr["number"], "url": pr["url"], "state": pr["state"], "check": check}
+        self._pr_cache[branch] = (time.time(), result)
+        return result
 
     def mark_abandoned(self, events):
         """中断した Agent は完了通知が来ないため、実行中ではなく中断として表示する。"""
@@ -163,6 +197,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(403, {"error": "forbidden"})
         if url.path == "/api/events":
             return self._sse()
+        if url.path == "/api/pr":
+            return self._json(200, self.hub.pr_status(query.get("branch", [""])[0]))
         if url.path == "/api/sessions":
             return self._json(200, {"sessions": list_sessions(self.hub.watcher.dir),
                                     "live": self.hub.watcher.session,

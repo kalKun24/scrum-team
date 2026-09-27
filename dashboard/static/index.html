@@ -3,36 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Scrum Dashboard</title>
+<title>scrum-dash</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 <header class="topbar">
-  <button class="btn" data-action="sessions">履歴</button>
-  <div class="brand">Scrum Dashboard</div>
-  <div class="sprint" id="sprint-summary">—</div>
+  <div class="brand">scrum-dash</div>
+  <div class="divider"></div>
+  <div class="project" id="project"></div>
+  <nav class="tabs" id="tabs" aria-label="画面"></nav>
   <div class="spacer"></div>
-  <div class="runner" id="runner-summary"></div>
+  <div class="runner" id="runner"></div>
 </header>
-<aside class="drawer" id="drawer" hidden></aside>
-<main class="layout">
-  <section class="col col-sm">
-    <h2>スクラムマスター</h2>
-    <div class="feed" id="sm-feed"></div>
-    <div class="composer" id="composer"></div>
-  </section>
-  <section class="col col-agents">
-    <div class="col-head">
-      <h2>Agent</h2>
-      <div class="chips" id="role-filter"></div>
-    </div>
-    <div class="agents" id="agents"></div>
-  </section>
-  <section class="col col-info">
-    <nav class="tabs" id="tabs"></nav>
-    <div class="tab-body" id="tab-body"></div>
-  </section>
-</main>
+<div id="banner"></div>
+<section class="sprintbar" id="sprintbar"></section>
+<main id="view"></main>
+<div id="overlay"></div>
 <script src="/static/app.js"></script>
 </body>
 </html>
