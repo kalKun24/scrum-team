@@ -14,6 +14,9 @@ description: 承認済みのスプリント計画に沿って designer・develop
 
 ## 手順
 1. スプリントファイルを読み、状態が `approved` / `blocked` 以外の PBI を処理対象とする。
+   - 再開したとき、状態が `design` / `dev` / `review` なのに担当の Agent が動いていない PBI は、中断されたものとみなす。
+   - 中断された PBI は、作業ディレクトリで `git status` と `git log` を確かめる。途中の変更が受け入れ基準に沿っていれば、isolation なしの Agent をその作業ディレクトリで起動し、続きから進めさせる。沿っていなければ、作業ディレクトリを捨ててやり直す。
+   - どちらにしたかと理由を「記録」に書き、実行ログの目的に `（中断から再開）` を付ける。
 2. デザイン：`ui: yes` で UI 仕様が無い PBI に `designer` を起動する。出力先は `.scrum/designs/<pbi-id>.md` とする。依存の無いものは並列に起動する。
 3. 実装：依存が解消した PBI に `developer` を起動する。
    - Agent tool の `isolation: "worktree"` を指定する。

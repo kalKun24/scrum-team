@@ -51,7 +51,8 @@ class Runner:
             log = open(log_dir / f"{self.project.name}.log", "a", encoding="utf-8")
             self.proc = subprocess.Popen(cmd, cwd=self.project, stdin=subprocess.PIPE,
                                          stdout=subprocess.PIPE, stderr=log, text=True, bufsize=1)
-            self.denials = []
+            if not resume or resume != self.session_id:
+                self.denials = []
             self._set(status="waiting", session_id=resume, error=None)
             threading.Thread(target=self._read, daemon=True).start()
 

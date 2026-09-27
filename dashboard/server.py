@@ -3,6 +3,7 @@
 import argparse
 import json
 import mimetypes
+import re
 import secrets
 import signal
 import threading
@@ -14,9 +15,19 @@ from urllib.parse import parse_qs, urlparse
 
 from runner import Runner
 from scrum_state import ScrumState
-from transcripts import TranscriptWatcher
+from transcripts import TranscriptWatcher, encode_project_path, list_sessions, read_session
 
 STATIC = Path(__file__).parent / "static"
+STATE_DIR = Path.home() / ".local" / "state" / "scrum-dash"
+
+
+def interruption_note(agents):
+    lines = [f"- {a['role']}：{a['description']}（作業ディレクトリ：{a.get('worktree') or '元のリポジトリ'}）"
+             for a in agents]
+    return ("【ダッシュボードからの連絡】前回、次の Agent が作業中のまま中断された。\n"
+            + "\n".join(lines)
+            + "\nスプリントファイルと各作業ディレクトリの状態（git status・git log）を確かめ、"
+              "続きから進めるかやり直すかを判断してから、作業を続けること。\n\n")
 
 
 class Hub:
@@ -33,14 +44,60 @@ class Hub:
         self.runner_version = 0
         self.watcher = TranscriptWatcher(self.project)
         self.scrum = ScrumState(self.project)
+        self.state_file = STATE_DIR / f"{encode_project_path(self.project)}.json"
+        saved = self._load()
+        self.interrupted = saved.get("interrupted") or saved.get("running_agents") or []
+        self.running_agents = []
         self.runner = Runner(self.project, plugin_dir, on_change=self._on_runner)
+        self.runner.session_id = saved.get("session_id")
+        self.runner.denials = saved.get("denials") or []
         self._on_runner(self.runner.state())
+
+    def _load(self):
+        try:
+            return json.loads(self.state_file.read_text())
+        except (OSError, ValueError):
+            return {}
+
+    def _save(self):
+        data = {"project": str(self.project), "session_id": self.runner.session_id,
+                "status": self.runner.status, "denials": self.runner.denials,
+                "running_agents": self.running_agents, "interrupted": self.interrupted,
+                "updated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z")}
+        self.state_file.parent.mkdir(parents=True, exist_ok=True)
+        tmp = self.state_file.with_suffix(".tmp")
+        tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+        tmp.replace(self.state_file)
+
+    def _track_agents(self):
+        """runner が操作しているセッションで、実行中の Agent を記録する。"""
+        if self.watcher.session != self.runner.session_id:
+            return
+        self.running_agents = [
+            {k: a.get(k) for k in ("agent_id", "role", "description", "worktree")}
+            for a in self.watcher.agents.values() if a["status"] == "running"]
 
     def _on_runner(self, state):
         with self.cond:
-            self.runner_state = state
+            if state["status"] == "exited" and self.running_agents:
+                self.interrupted = self.running_agents
+                self.running_agents = []
+            self.runner_state = {**state, "interrupted": self.interrupted}
             self.runner_version += 1
+            self._save()
             self.cond.notify_all()
+
+    def start(self, resume, message):
+        target = resume if isinstance(resume, str) else (
+            (self.runner.session_id or self.watcher.session) if resume else None)
+        note = ""
+        if target and self.interrupted:
+            note = interruption_note(self.interrupted)
+            self.interrupted = []
+            self._save()
+        self.runner.start(resume=target)
+        if message or note:
+            self.runner.send(note + (message or "続けて。"))
 
     def loop(self):
         while True:
@@ -53,6 +110,9 @@ class Hub:
                             self.epoch += 1
                             self.events = []
                         self.events.append(ev)
+                    if any(ev["type"] == "agent" for ev in events):
+                        self._track_agents()
+                        self._save()
                     if snapshot is not None:
                         self.state = snapshot
                         self.state_version += 1
@@ -92,6 +152,18 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(403, {"error": "forbidden"})
         if url.path == "/api/events":
             return self._sse()
+        if url.path == "/api/sessions":
+            return self._json(200, {"sessions": list_sessions(self.hub.watcher.dir),
+                                    "live": self.hub.watcher.session,
+                                    "runner": self.hub.runner.session_id})
+        if url.path.startswith("/api/sessions/"):
+            session_id = url.path.rsplit("/", 1)[-1]
+            if not re.fullmatch(r"[0-9a-f-]{8,64}", session_id):
+                return self._json(400, {"error": "invalid session id"})
+            events = read_session(self.hub.project, session_id)
+            if events is None:
+                return self._json(404, {"error": "not found"})
+            return self._json(200, {"events": events})
         return self._json(404, {"error": "not found"})
 
     def do_POST(self):
@@ -106,10 +178,7 @@ class Handler(BaseHTTPRequestHandler):
         runner = self.hub.runner
         try:
             if url.path == "/api/session/start":
-                resume = self.hub.watcher.session if body.get("resume") else None
-                runner.start(resume=resume)
-                if body.get("message"):
-                    runner.send(body["message"])
+                self.hub.start(body.get("resume"), body.get("message"))
             elif url.path == "/api/message":
                 runner.send(body.get("text", ""))
             elif url.path == "/api/session/stop":
@@ -190,6 +259,11 @@ def main():
     if not args.no_open:
         webbrowser.open(url)
     def shutdown(*_):
+        with hub.cond:
+            hub._track_agents()
+            if hub.running_agents and hub.runner.status in ("running", "waiting"):
+                hub.interrupted, hub.running_agents = hub.running_agents, []
+            hub._save()
         hub.runner.stop()
         raise SystemExit(0)
 

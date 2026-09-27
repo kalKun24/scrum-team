@@ -74,12 +74,26 @@ class ScrumState:
                  if (m := re.match(r"sprint-(\d+)\.md$", p.name))]
         return max(files) if files else (None, None)
 
+    def _sprint(self, number, path):
+        text = _read(path) if path else None
+        return {
+            "number": number,
+            "phase": _field(text, "phase"),
+            "goal": _field(text, "goal"),
+            "pbis": _table(_section(text, "## 対象 PBI")),
+            "agent_log": _table(_section(text, "## Agent 実行ログ")),
+            "retro": _section(text, "## レトロスペクティブ") or _section(text, "## KPT"),
+            "markdown": text,
+        }
+
     def _build(self):
         if not self.root.is_dir():
             return {"initialized": False}
         config = _read(self.root / "config.md")
         number, path = self._latest_sprint(config)
-        sprint_text = _read(path) if path else None
+        sprints = sorted(
+            ((int(m.group(1)), p) for p in (self.root / "sprints").glob("sprint-*.md")
+             if (m := re.match(r"sprint-(\d+)\.md$", p.name))), reverse=True)
         backlog = _read(self.root / "backlog.md")
         counts = {}
         for status in re.findall(r"^- status:\s*(\S+)", backlog or "", re.M):
@@ -88,15 +102,8 @@ class ScrumState:
             "initialized": True,
             "backend": _field(config, "backend"),
             "capacity": _field(config, "capacity"),
-            "sprint": {
-                "number": number,
-                "phase": _field(sprint_text, "phase"),
-                "goal": _field(sprint_text, "goal"),
-                "pbis": _table(_section(sprint_text, "## 対象 PBI")),
-                "agent_log": _table(_section(sprint_text, "## Agent 実行ログ")),
-                "retro": _section(sprint_text, "## レトロスペクティブ"),
-                "markdown": sprint_text,
-            },
+            "sprint": self._sprint(number, path),
+            "sprints": [self._sprint(n, p) for n, p in sprints],
             "backlog_counts": counts,
             "agreements": _read(self.root / "agreements.md"),
             "metrics": _read(self.root / "metrics.md"),

@@ -145,6 +145,7 @@ class TranscriptWatcher:
             "description": meta.get("description", ""),
             "background": meta.get("requestShape") == "background",
             "tool_id": tool_id,
+            "worktree": meta.get("worktreePath"),
             "status": "running",
         }
         self.agents[agent_id] = info
@@ -240,3 +241,55 @@ class TranscriptWatcher:
             return [self._msg(agent_id, role, "request", content, rec)]
         return [self._msg(agent_id, role, "request", b["text"], rec)
                 for b in content or [] if b.get("type") == "text" and b.get("text", "").strip()]
+
+
+_session_cache = {}
+
+
+def _session_summary(path):
+    """セッション一覧用の要約。ファイルが変わっていなければキャッシュを返す。"""
+    stat = path.stat()
+    key = (str(path), stat.st_mtime_ns, stat.st_size)
+    if key in _session_cache:
+        return _session_cache[key]
+    info = {"id": path.stem, "updated": stat.st_mtime, "started": None,
+            "first_prompt": None, "last_prompt": None, "cost": None, "agents": 0}
+    with path.open() as fh:
+        for line in fh:
+            try:
+                rec = json.loads(line)
+            except ValueError:
+                continue
+            if not info["started"] and rec.get("timestamp"):
+                info["started"] = rec["timestamp"]
+            t = rec.get("type")
+            if t == "cost-state":
+                info["cost"] = rec.get("totalCostUSD")
+            elif t == "last-prompt":
+                info["last_prompt"] = rec.get("lastPrompt")
+            elif (t == "user" and not rec.get("isMeta") and not info["first_prompt"]
+                  and isinstance(rec.get("message", {}).get("content"), str)):
+                content = rec["message"]["content"]
+                if "<task-notification>" not in content:
+                    cmd = _tag(content, "command-name")
+                    info["first_prompt"] = (f"{cmd} {_tag(content, 'command-args')}".strip()
+                                            if cmd else content)[:200]
+    sub = path.with_suffix("") / "subagents"
+    if sub.is_dir():
+        info["agents"] = len(list(sub.glob("agent-*.meta.json")))
+    _session_cache[key] = info
+    return info
+
+
+def list_sessions(directory):
+    if not directory.is_dir():
+        return []
+    sessions = [_session_summary(p) for p in directory.glob("*.jsonl")]
+    return sorted(sessions, key=lambda s: s["updated"], reverse=True)
+
+
+def read_session(project, session_id):
+    watcher = TranscriptWatcher(project, session=session_id)
+    if not (watcher.dir / f"{session_id}.jsonl").is_file():
+        return None
+    return watcher.poll()

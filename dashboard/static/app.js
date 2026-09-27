@@ -13,10 +13,26 @@ const TABS = [
 const REQUEST_LINES = 8;
 
 const S = {
-  project: "", session: null, agents: new Map(), msgs: new Map(), order: [],
-  scrum: null, runner: null, filter: "all", expanded: new Set(), collapsed: new Set(),
-  openedFull: new Set(), tab: "sprint", draft: "",
+  project: "", scrum: null, runner: null, filter: "all", expanded: new Set(), collapsed: new Set(),
+  openedFull: new Set(), tab: "sprint", draft: "", sprintView: null,
+  sessions: null, drawer: false,
 };
+function newStore() { return { session: null, agents: new Map(), msgs: new Map(), order: [] }; }
+const LIVE = newStore();
+let HIST = null; // 過去のセッションを見ているときの { info, store }
+const V = () => (HIST ? HIST.store : LIVE);
+
+function ingest(store, ev) {
+  if (ev.type === "session") store.session = ev.session;
+  if (ev.type === "agent") {
+    if (!store.agents.has(ev.agent_id)) store.order.push(ev.agent_id);
+    store.agents.set(ev.agent_id, ev);
+  }
+  if (ev.type === "msg") {
+    if (!store.msgs.has(ev.agent_id)) store.msgs.set(ev.agent_id, []);
+    store.msgs.get(ev.agent_id).push(ev);
+  }
+}
 
 // ---------- 通信 ----------
 function api(path, body) {
@@ -36,28 +52,35 @@ function connect() {
 }
 
 function reset() {
-  S.agents.clear(); S.msgs.clear(); S.order = []; S.expanded.clear(); S.collapsed.clear();
+  Object.assign(LIVE, newStore());
 }
 
 function handle(ev) {
   switch (ev.type) {
     case "project": S.project = ev.path; reset(); break;
     case "reset": reset(); break;
-    case "session": S.session = ev.session; break;
-    case "agent": {
-      if (!S.agents.has(ev.agent_id)) S.order.push(ev.agent_id);
-      S.agents.set(ev.agent_id, ev);
-      break;
-    }
-    case "msg": {
-      const key = ev.agent_id;
-      if (!S.msgs.has(key)) S.msgs.set(key, []);
-      S.msgs.get(key).push(ev);
-      break;
-    }
     case "state": S.scrum = ev.state; break;
     case "runner": S.runner = ev.runner; break;
+    default: ingest(LIVE, ev);
   }
+}
+
+function apiGet(path) {
+  return fetch(`${path}?t=${encodeURIComponent(TOKEN)}`).then(async (r) => {
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data.error || r.statusText);
+    return data;
+  });
+}
+
+async function openHistory(info) {
+  if (info.id === LIVE.session) { HIST = null; S.drawer = false; schedule(); return; }
+  const data = await apiGet(`/api/sessions/${info.id}`);
+  const store = newStore();
+  for (const ev of data.events) ingest(store, ev);
+  HIST = { info, store };
+  S.drawer = false;
+  schedule();
 }
 
 let pending = false;
@@ -165,7 +188,8 @@ function msgHtml(m, key) {
 
 function renderHeader() {
   const sc = S.scrum;
-  let html = S.project ? `<span>${esc(S.project.split("/").pop())}</span>` : "";
+  let html = HIST ? `<span class="history-banner">過去のセッション ${esc(when(HIST.info.started))}</span> ` : "";
+  html += S.project ? `<span>${esc(S.project.split("/").pop())}</span>` : "";
   if (sc && sc.initialized && sc.sprint && sc.sprint.number != null) {
     const sp = sc.sprint;
     html += ` · <b>Sprint ${sp.number}</b> · ${esc(sp.phase || "")}${sp.goal ? " · " + esc(sp.goal) : ""}`;
@@ -183,9 +207,9 @@ function renderHeader() {
 function renderSM() {
   const feed = $("sm-feed");
   const stick = nearBottom(feed);
-  let list = S.msgs.get("main") || [];
+  let list = V().msgs.get("main") || [];
   const r = S.runner || {};
-  const busy = [...S.agents.values()].some((a) => a.status === "running");
+  const busy = [...V().agents.values()].some((a) => a.status === "running");
   const ask = r.status === "waiting" && r.session_id && !r.error && !busy ? lastSmText() : null;
   if (ask && list.length && list[list.length - 1].text === ask) list = list.slice(0, -1);
   feed.innerHTML = list.length ? list.map((m, k) => msgHtml(m, `main:${k}`)).join("")
@@ -193,8 +217,14 @@ function renderSM() {
   if (stick) feed.scrollTop = feed.scrollHeight;
 }
 
+function when(t) {
+  if (!t) return "—";
+  const d = new Date(t);
+  return isNaN(d) ? "—" : d.toLocaleString("ja-JP", { hour12: false, month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
 function lastSmText() {
-  const list = S.msgs.get("main") || [];
+  const list = LIVE.msgs.get("main") || [];
   for (let k = list.length - 1; k >= 0; k--) {
     if (list[k].kind === "po" || list[k].kind === "error") return null;
     if (list[k].kind === "text") return list[k].text;
@@ -206,15 +236,28 @@ let composerKey = null;
 function renderComposer() {
   const el = $("composer");
   const r = S.runner || { status: "idle" };
-  const busy = [...S.agents.values()].filter((a) => a.status === "running").length;
-  const key = JSON.stringify([r.status, r.session_id, r.error, S.session, lastSmText(), busy]);
+  const busy = [...V().agents.values()].filter((a) => a.status === "running").length;
+  const key = JSON.stringify([r.status, r.session_id, r.error, LIVE.session, lastSmText(), busy,
+    HIST && HIST.info.id, (r.interrupted || []).length]);
   if (key === composerKey) return;
   composerKey = key;
   const active = document.activeElement;
   if (active && active.id === "po-input") S.draft = active.value;
   let html = "";
-  if (r.status === "waiting" && r.session_id) {
-    const list = S.msgs.get("main") || [];
+  if (HIST) {
+    const i = HIST.info;
+    const locked = r.status === "running" || r.status === "waiting";
+    html += `<div class="ask" style="border-color:var(--accent);background:var(--accent-soft)">
+      <div class="ask-label" style="color:var(--accent)">過去のセッションを表示中</div>
+      <p>${esc(when(i.started))} 〜 ${esc(when(i.updated * 1000))}　<code>${esc(i.id.slice(0, 8))}</code></p>
+      <p class="hint">最初の入力：${esc(i.first_prompt || "—")}<br>最後の入力：${esc(i.last_prompt || "—")}</p></div>
+      <div class="row">
+        <button class="btn" data-action="live">ライブ表示に戻る</button>
+        <div class="spacer"></div>
+        <button class="btn primary" data-action="resume-hist" ${locked ? "disabled" : ""}>このセッションから再開</button>
+      </div>${locked ? '<p class="hint">別のセッションを操作中のため再開できない。先に停止する。</p>' : ""}`;
+  } else if (r.status === "waiting" && r.session_id) {
+    const list = V().msgs.get("main") || [];
     const last = [...list].reverse().find((m) => m.kind !== "tool");
     const error = r.error || (last && last.kind === "error" ? last.text : null);
     const ask = error || busy ? null : lastSmText();
@@ -233,13 +276,16 @@ function renderComposer() {
     html += `<div class="row"><span class="pill running"><span class="dot"></span>スクラムマスターが作業中</span>
       <div class="spacer"></div><button class="btn" data-action="stop">停止</button></div>`;
   } else {
-    const last = S.session ? lastSmText() : null;
+    const target = r.session_id || LIVE.session;
+    const last = target && target === LIVE.session ? lastSmText() : null;
+    const interrupted = r.interrupted || [];
+    if (interrupted.length) html += `<div class="ask"><div class="ask-label">作業中のまま中断した Agent がいる</div><ul>${interrupted.map((a) => `<li>${esc(a.role)}：${esc(a.description)}${a.worktree ? `<br><code>${esc(a.worktree)}</code>` : ""}</li>`).join("")}</ul><p class="hint">再開すると、この内容をスクラムマスターに伝え、続きから進めるかやり直すかを判断させる。</p></div>`;
     if (last) html += `<div class="ask" style="border-color:var(--line);background:var(--panel-2)"><div class="ask-label" style="color:var(--muted)">スクラムマスターの最後の発言</div><div class="md">${md(last)}</div></div>`;
-    const draft = S.draft || "/scrum-team:run-sprint";
-    const note = S.session ? `<span class="hint">表示中のセッション：${esc(S.session.slice(0, 8))}</span>` : "";
+    const draft = S.draft || (target ? "続けて。" : "/scrum-team:run-sprint");
+    const note = target ? `<span class="hint">再開先：${esc(target.slice(0, 8))}${target === r.session_id ? "（前回操作したセッション）" : ""}</span>` : "";
     html += `<textarea id="po-input">${esc(draft)}</textarea>
       <div class="row">
-        <label class="hint"><input type="checkbox" id="resume" ${S.session ? "checked" : ""}> 表示中のセッションを続ける</label>
+        <label class="hint"><input type="checkbox" id="resume" ${target ? "checked" : ""}> セッションを再開する</label>
         ${note}
         <div class="spacer"></div>
         <button class="btn primary" data-action="start">開始</button>
@@ -255,25 +301,25 @@ function renderComposer() {
 }
 
 function renderFilter() {
-  const roles = ["all", ...new Set(S.order.map((id) => S.agents.get(id).role))];
+  const roles = ["all", ...new Set(V().order.map((id) => V().agents.get(id).role))];
   $("role-filter").innerHTML = roles.map((r) =>
     `<button class="chip ${S.filter === r ? "on" : ""}" data-filter="${esc(r)}">${r === "all" ? "すべて" : esc(ROLE_LABEL[r] || r)}</button>`).join("");
 }
 
 function firstTs(id) {
-  const list = S.msgs.get(id);
+  const list = V().msgs.get(id);
   return (list && list[0] && list[0].ts) || "";
 }
 
 function renderAgents() {
   const box = $("agents");
   const keepScroll = box.scrollTop;
-  const ids = [...S.order].sort((a, b) => firstTs(a).localeCompare(firstTs(b)))
-    .filter((id) => S.filter === "all" || S.agents.get(id).role === S.filter);
+  const ids = [...V().order].sort((a, b) => firstTs(a).localeCompare(firstTs(b)))
+    .filter((id) => S.filter === "all" || V().agents.get(id).role === S.filter);
   if (!ids.length) { box.innerHTML = `<p class="empty">まだ Agent は起動していない。</p>`; return; }
   box.innerHTML = ids.map((id) => {
-    const a = S.agents.get(id);
-    const list = S.msgs.get(id) || [];
+    const a = V().agents.get(id);
+    const list = V().msgs.get(id) || [];
     const open = S.expanded.has(id) || (a.status === "running" && !S.collapsed.has(id));
     const tools = list.filter((m) => m.kind === "tool").length;
     const status = a.status === "running" ? `<span class="pill running"><span class="dot"></span>実行中</span>`
@@ -289,7 +335,7 @@ function renderAgents() {
   box.scrollTop = keepScroll;
   for (const id of ids) {
     const b = document.getElementById(`body-${id}`);
-    if (b && S.agents.get(id).status === "running") b.scrollTop = b.scrollHeight;
+    if (b && V().agents.get(id).status === "running") b.scrollTop = b.scrollHeight;
   }
 }
 
@@ -310,6 +356,17 @@ function allowRule(d) {
   return d.tool;
 }
 
+function selectedSprint(sc) {
+  const all = sc.sprints || [];
+  return all.find((x) => x.number === S.sprintView) || sc.sprint || {};
+}
+function sprintPicker(sc, sp) {
+  const all = sc.sprints || [];
+  if (all.length < 2) return "";
+  return `<div class="chips" style="margin-bottom:10px">${all.map((x) =>
+    `<button class="chip ${x.number === sp.number ? "on" : ""}" data-sprint="${x.number === (sc.sprint || {}).number ? "" : x.number}">Sprint ${x.number}</button>`).join("")}</div>`;
+}
+
 function renderTabs() {
   const denials = (S.runner && S.runner.denials) || [];
   $("tabs").innerHTML = TABS.map(([key, label]) => {
@@ -324,14 +381,15 @@ function renderTabs() {
   if (!sc || !sc.initialized) {
     html = `<p class="empty">.scrum/ がまだ無い。スプリントを始めると作られる。</p>`;
   } else if (S.tab === "sprint") {
-    const sp = sc.sprint || {};
+    const sp = selectedSprint(sc);
     const counts = Object.entries(sc.backlog_counts || {}).map(([k, v]) => `${esc(k)} ${v}`).join(" / ");
-    html = `<div class="md"><h3>Sprint ${esc(sp.number ?? "—")}（${esc(sp.phase || "—")}）</h3><p>${inline(sp.goal || "")}</p></div>
+    html = sprintPicker(sc, sp) + `<div class="md"><h3>Sprint ${esc(sp.number ?? "—")}（${esc(sp.phase || "—")}）</h3><p>${inline(sp.goal || "")}</p></div>
       <h2>対象 PBI</h2>${table(sp.pbis)}
       <h2>Agent 実行ログ</h2>${table(sp.agent_log)}
       <p class="hint">バックログ：${counts || "—"}　容量：${esc(sc.capacity || "—")}　置き場：${esc(sc.backend || "—")}</p>`;
   } else if (S.tab === "retro") {
-    html = mdOr(sc.sprint && sc.sprint.retro, "このスプリントの振り返りはまだ無い。");
+    const sp = selectedSprint(sc);
+    html = sprintPicker(sc, sp) + mdOr(sp.retro, "このスプリントの振り返りはまだ無い。");
   } else if (S.tab === "agreements") {
     html = mdOr(sc.agreements, "チーム合意はまだ無い。");
   } else if (S.tab === "metrics") {
@@ -349,7 +407,48 @@ function renderTabs() {
   body.scrollTop = keep;
 }
 
+async function toggleDrawer() {
+  S.drawer = !S.drawer;
+  if (S.drawer) {
+    S.sessions = null;
+    schedule();
+    const data = await apiGet("/api/sessions").catch((err) => ({ sessions: [], error: err.message }));
+    S.sessions = data.sessions;
+  }
+  schedule();
+}
+
+function renderDrawer() {
+  const el = $("drawer");
+  el.hidden = !S.drawer;
+  if (!S.drawer) return;
+  const q = (($("session-filter") && $("session-filter").value) || "").trim();
+  const r = S.runner || {};
+  const list = (S.sessions || []).filter((x) => !q || `${x.first_prompt} ${x.last_prompt}`.includes(q));
+  const items = S.sessions == null ? '<p class="empty">読み込み中…</p>'
+    : list.map((x) => {
+      const badges = [
+        x.id === LIVE.session ? '<span class="pill running"><span class="dot"></span>ライブ</span>' : "",
+        x.id === r.session_id ? '<span class="pill waiting"><span class="dot"></span>前回操作</span>' : "",
+        HIST && x.id === HIST.info.id ? '<span class="pill">表示中</span>' : "",
+      ].join("");
+      return `<button class="session" data-session="${esc(x.id)}">
+        <div class="row" style="margin:0"><b>${esc(when(x.started))}</b><span class="hint">〜 ${esc(when(x.updated * 1000))}</span><div class="spacer"></div>${badges}</div>
+        <div class="session-prompt">${esc(x.first_prompt || "—")}</div>
+        <div class="hint clamp">最後：${esc(x.last_prompt || "—")}</div>
+        <div class="hint">Agent ${x.agents}件${x.cost != null ? `　$${Number(x.cost).toFixed(2)}` : ""}　<code>${esc(x.id.slice(0, 8))}</code></div>
+      </button>`;
+    }).join("") || '<p class="empty">該当するセッションは無い。</p>';
+  const focus = document.activeElement && document.activeElement.id === "session-filter";
+  const prev = el.querySelector(".drawer-list");
+  const keep = prev ? prev.scrollTop : 0;
+  el.innerHTML = `<div class="drawer-head"><h2>セッションの履歴</h2><input id="session-filter" placeholder="入力内容で絞り込む" value="${esc(q)}"></div><div class="drawer-list">${items}</div>`;
+  el.querySelector(".drawer-list").scrollTop = keep;
+  if (focus) { const f = $("session-filter"); f.focus(); f.setSelectionRange(f.value.length, f.value.length); }
+}
+
 function render() {
+  renderDrawer();
   renderHeader();
   renderSM();
   renderComposer();
@@ -371,14 +470,23 @@ function alertInline(message) {
 }
 
 document.addEventListener("click", (e) => {
-  const t = e.target.closest("[data-action],[data-quick],[data-toggle],[data-filter],[data-tab],[data-full]");
-  if (!t) return;
+  const t = e.target.closest("[data-action],[data-quick],[data-toggle],[data-filter],[data-tab],[data-full],[data-session],[data-sprint]");
+  if (!t) {
+    if (S.drawer && !e.target.closest("#drawer")) { S.drawer = false; schedule(); }
+    return;
+  }
+  if (t.dataset.session) {
+    const info = (S.sessions || []).find((x) => x.id === t.dataset.session);
+    if (info) openHistory(info).catch((err) => alertInline(err.message));
+    return;
+  }
+  if (t.dataset.sprint !== undefined) { S.sprintView = t.dataset.sprint ? Number(t.dataset.sprint) : null; schedule(); return; }
   if (t.dataset.full) { S.openedFull.add(t.dataset.full); schedule(); return; }
   if (t.dataset.tab) { S.tab = t.dataset.tab; schedule(); return; }
   if (t.dataset.filter) { S.filter = t.dataset.filter; schedule(); return; }
   if (t.dataset.toggle) {
     const id = t.dataset.toggle;
-    const a = S.agents.get(id);
+    const a = V().agents.get(id);
     const open = S.expanded.has(id) || (a.status === "running" && !S.collapsed.has(id));
     if (open) { S.expanded.delete(id); S.collapsed.add(id); } else { S.expanded.add(id); S.collapsed.delete(id); }
     schedule();
@@ -388,6 +496,15 @@ document.addEventListener("click", (e) => {
   const input = $("po-input");
   if (t.dataset.action === "send") send(input && input.value);
   if (t.dataset.action === "stop") api("/api/session/stop").catch((err) => alertInline(err.message));
+  if (t.dataset.action === "live") { HIST = null; schedule(); return; }
+  if (t.dataset.action === "sessions") { toggleDrawer(); return; }
+  if (t.dataset.action === "resume-hist") {
+    const id = HIST.info.id;
+    HIST = null;
+    api("/api/session/start", { resume: id, message: "続けて。" }).catch((err) => alertInline(err.message));
+    schedule();
+    return;
+  }
   if (t.dataset.action === "start") {
     const resume = $("resume") && $("resume").checked;
     const message = (input && input.value.trim()) || "";
@@ -395,7 +512,10 @@ document.addEventListener("click", (e) => {
     api("/api/session/start", { resume, message }).catch((err) => alertInline(err.message));
   }
 });
-document.addEventListener("input", (e) => { if (e.target.id === "po-input") S.draft = e.target.value; });
+document.addEventListener("input", (e) => {
+  if (e.target.id === "po-input") S.draft = e.target.value;
+  if (e.target.id === "session-filter") renderDrawer();
+});
 document.addEventListener("keydown", (e) => {
   if (e.target.id === "po-input" && e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
     e.preventDefault();
