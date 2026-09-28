@@ -380,12 +380,42 @@ function liveState() {
 }
 function inboxCount() { return liveState().ask ? 1 : 0; }
 
-function demoSummary(demo) {
+const IMAGE_MD = /!\[[^\]]*\]\([^)\s]+\)\s*/g;
+function demoFile(sp, path) {
+  return `/api/demo-file?t=${encodeURIComponent(TOKEN)}&sprint=${sp.number}&path=${encodeURIComponent(path)}`;
+}
+// Web アプリのデモのスクリーンショット。押すと原寸で開く
+function shotsHtml(sp, images) {
+  if (!images || !images.length) return "";
+  return `<div class="shots">${images.map((im) => `<a href="${esc(demoFile(sp, im.path))}" target="_blank" rel="noopener">
+    <figure><img src="${esc(demoFile(sp, im.path))}" alt="${esc(im.alt)}" loading="lazy"><figcaption>${esc(im.alt)}</figcaption></figure></a>`).join("")}</div>`;
+}
+// 回ごとのデモの判定。差し戻しの指摘と対応を残す
+function judgementsHtml(sp) {
+  const rows = sp.judgements || [];
+  if (!rows.length) return "";
+  return `<div class="judgements"><div class="small muted">これまでの判定</div><ol>${rows.map((r) => {
+    const ok = (r["判定"] || "").includes("受け入れ");
+    return `<li><span class="state ${ok ? "ok" : "bad"}">${esc(r["回"] || "")}回目：${esc(r["判定"] || "")}</span>
+      ${r["PO の指摘"] && r["PO の指摘"] !== "—" ? `<span>${inline(r["PO の指摘"])}</span>` : ""}
+      ${r["対応"] ? `<span class="small muted">→ ${inline(r["対応"])}${r["原因の PBI"] && r["原因の PBI"] !== "—" ? `（${esc(r["原因の PBI"])}）` : ""}</span>` : ""}</li>`; }).join("")}</ol></div>`;
+}
+function demoRecord(demo) {
+  return md(demo.readme || "") + md((demo.rehearsal || "").replace(IMAGE_MD, ""));
+}
+function previousDemos(sp, key) {
+  const prev = (sp.demo && sp.demo.previous) || [];
+  if (!prev.length) return "";
+  return prev.map((p) => { const k = `${key}-${p.round}`; return `<button type="button" class="link-btn" style="text-align:left" data-full="${k}">${S.openedFull.has(k) ? "たたむ" : `${p.round}回目のリハーサル（${p.matched} / ${p.total}）を見る`}</button>
+    ${S.openedFull.has(k) ? `${shotsHtml(sp, p.images)}<div class="md">${md((p.rehearsal || "").replace(IMAGE_MD, ""))}</div>` : ""}`; }).join("");
+}
+function demoSummary(demo, sp) {
   if (!demo) return "";
   const total = (demo.results || []).length;
   return `${demo.command ? `<div class="notice-card" style="background:var(--top);color:#E6E3DC;border:0"><div class="small" style="color:#A09B91">動かし方</div><code style="color:#E6E3DC">${esc(demo.command)}</code></div>` : ""}
     ${total ? `<ul class="verdicts">${demo.results.map((r) => { const ok = r["判定"] === "一致";
-      return `<li><span class="${ok ? "ok" : "ng"}">${ok ? CHECK : "!"}</span><span style="flex:1">${inline(r["期待する結果"] || "")}</span><span class="${ok ? "ok" : "ng"}">${esc(r["判定"] || "")}</span></li>`; }).join("")}</ul>` : '<p class="empty">リハーサルの記録はまだ無い。</p>'}`;
+      return `<li><span class="${ok ? "ok" : "ng"}">${ok ? CHECK : "!"}</span><span style="flex:1">${inline(r["期待する結果"] || "")}</span><span class="${ok ? "ok" : "ng"}">${esc(r["判定"] || "")}</span></li>`; }).join("")}</ul>` : '<p class="empty">リハーサルの記録はまだ無い。</p>'}
+    ${sp ? shotsHtml(sp, demo.images) : ""}`;
 }
 // レビューでは、PBI ごとではなく、デモで見たもの全体を受け入れるかを判断する
 function acceptanceCards(sp, invs) {
@@ -393,22 +423,25 @@ function acceptanceCards(sp, invs) {
   const bl = backlogMap();
   const demo = sp.demo;
   const total = demo ? (demo.results || []).length : 0;
+  const round = (sp.judgements || []).length + 1;
   const approved = sp.pbis.filter((row) => row["状態"] === "approved");
   const reviews = approved.flatMap((row) => invs.filter((i) => (i.description || "").includes(row.PBI) && !isRetro(i))
     .map((i) => ({ i, v: verdictOf(i) })).filter((x) => x.v && slotOf(x.i.role, sp).endsWith("review")));
   const openKey = "demo-full";
   return `<article class="inbox-card">
-    <div class="kind"><span>デモの受け入れ判定</span><span>承認点 2 / 2</span></div>
+    <div class="kind"><span>デモの受け入れ判定${round > 1 ? `（${round}回目の見せ直し）` : ""}</span><span>承認点 2 / 2</span></div>
     <div style="font-size:16px;font-weight:700">${inline(sp.goal || "")}</div>
+    ${judgementsHtml(sp)}
     <div class="tiles"><div class="tile"><div class="k">リハーサル</div><div class="v">${total ? `${demo.matched} / ${total}` : "—"}</div></div>
       <div class="tile"><div class="k">PBI</div><div class="v">${approved.length}</div></div>
       <div class="tile"><div class="k">レビュー</div><div class="v">${reviews.filter((x) => x.v.verdict === "approve").length} / ${reviews.length || "—"}</div></div></div>
-    ${demoSummary(demo)}
+    ${demoSummary(demo, sp)}
     <div class="small muted">対象：${approved.map((r) => `${esc(r.PBI)} ${inline((bl.get(r.PBI) || {}).title || "")}`).join(" / ")}</div>
     ${demo ? `<button type="button" class="link-btn" style="text-align:left" data-full="${openKey}">${S.openedFull.has(openKey) ? "台本とリハーサル記録をたたむ" : "台本とリハーサル記録を読む"}</button>
-      ${S.openedFull.has(openKey) ? `<div class="md ask" style="max-height:none">${md(demo.readme || "")}${md(demo.rehearsal || "")}</div>` : ""}` : ""}
+      ${S.openedFull.has(openKey) ? `<div class="md ask" style="max-height:none">${demoRecord(demo)}</div>` : ""}
+      ${previousDemos(sp, "demo-prev")}` : ""}
     <div class="row-gap"><button type="button" class="btn primary big" style="flex:1" data-send="デモを受け入れる。">受け入れる</button>
-      <button type="button" class="btn big" data-prefill="デモの次の点が違う：">直してほしい点を書く</button></div></article>`;
+      <button type="button" class="btn big" data-prefill="デモを差し戻す。次の点が違う：">差し戻す（違う点を書く）</button></div></article>`;
 }
 function composerHtml() {
   const { r, error, busy, waiting, ask } = liveState();
@@ -570,8 +603,8 @@ function renderPast(el) {
      <div class="tiles">${counts.map(([l, n]) => `<div class="tile"><div class="k">${l}</div><div class="v">${n}</div></div>`).join("")}</div>`);
   const sel = S.selected && invs.find((i) => i.agent_id === S.selected);
   if (sel) renderDetail($("c3"), sel, sp);
-  else put($("c3"), `retro:${sp.number}:${[...S.openedFull].join()}`, `${sp.demo ? `<div class="panel pad" style="display:flex;flex-direction:column;gap:10px"><div class="h2">デモ<span class="small muted" style="font-family:inherit;font-weight:400">${esc(sp.demo.path)}</span></div>${demoSummary(sp.demo)}
-      <button type="button" class="link-btn" style="text-align:left" data-full="demo-past">${S.openedFull.has("demo-past") ? "たたむ" : "台本とリハーサル記録を読む"}</button>${S.openedFull.has("demo-past") ? `<div class="md">${md(sp.demo.readme || "")}${md(sp.demo.rehearsal || "")}</div>` : ""}</div>` : ""}
+  else put($("c3"), `retro:${sp.number}:${[...S.openedFull].join()}`, `${sp.demo ? `<div class="panel pad" style="display:flex;flex-direction:column;gap:10px"><div class="h2">デモ<span class="small muted" style="font-family:inherit;font-weight:400">${esc(sp.demo.path)}</span></div>${judgementsHtml(sp)}${demoSummary(sp.demo, sp)}
+      <button type="button" class="link-btn" style="text-align:left" data-full="demo-past">${S.openedFull.has("demo-past") ? "たたむ" : "台本とリハーサル記録を読む"}</button>${S.openedFull.has("demo-past") ? `<div class="md">${demoRecord(sp.demo)}</div>` : ""}${previousDemos(sp, "demo-past-prev")}</div>` : ""}
     <div class="panel pad" style="overflow-y:auto"><div class="h2">振り返り<button type="button" class="link link-btn" data-view="retro">全文</button></div><div class="md">${md(sp.retro || "記録は無い。")}</div></div>`);
 }
 

@@ -197,6 +197,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(403, {"error": "forbidden"})
         if url.path == "/api/events":
             return self._sse()
+        if url.path == "/api/demo-file":
+            return self._demo_file(query)
         if url.path == "/api/pr":
             return self._json(200, self.hub.pr_status(query.get("branch", [""])[0]))
         if url.path == "/api/sessions":
@@ -246,6 +248,24 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", (mimetypes.guess_type(file.name)[0] or "text/plain")
                          + "; charset=utf-8")
         self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(data)
+
+    def _demo_file(self, query):
+        """デモのスクリーンショットを返す。.scrum/demos/sprint-<N>/ の中の画像だけを出す。"""
+        sprint, path = query.get("sprint", [""])[0], query.get("path", [""])[0]
+        if not re.fullmatch(r"\d{1,4}", sprint):
+            return self._json(400, {"error": "invalid sprint"})
+        root = (self.hub.project / ".scrum" / "demos" / f"sprint-{sprint}").resolve()
+        file = (root / path).resolve()
+        if root not in file.parents or file.suffix.lower() not in (".png", ".jpg", ".jpeg", ".gif", ".webp") \
+                or not file.is_file():
+            return self._json(404, {"error": "not found"})
+        data = file.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type", mimetypes.guess_type(file.name)[0] or "application/octet-stream")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
         self.end_headers()
         self.wfile.write(data)
 

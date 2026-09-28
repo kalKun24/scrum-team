@@ -46,6 +46,25 @@ def _table(markdown):
     return [dict(zip(header, split(r))) for r in rows[2:]]
 
 
+def _round_of(name):
+    m = re.search(r"-(\d+)\.md$", name)
+    return int(m.group(1)) if m else 0
+
+
+IMAGE = re.compile(r"!\[([^\]]*)\]\(([^)\s]+)\)")
+IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg", ".gif", ".webp")
+
+
+def _images(root, markdown):
+    """リハーサル記録の画像のうち、デモの場所の中に実在するものを返す。パスはデモの場所からの相対。"""
+    out = []
+    for alt, path in IMAGE.findall(markdown or ""):
+        file = (root / path).resolve()
+        if root.resolve() in file.parents and file.suffix.lower() in IMAGE_SUFFIXES and file.is_file():
+            out.append({"alt": alt, "path": str(file.relative_to(root.resolve()))})
+    return out
+
+
 def _backlog_markdown(text):
     """backlog.md の `## PBI-xxx: タイトル` 節を、優先度順（並び順）の PBI の一覧にする。"""
     items = []
@@ -120,6 +139,7 @@ class ScrumState:
             "retro": _section(text, "## レトロスペクティブ") or _section(text, "## KPT"),
             "demo_script": _table(_section(text, "## デモ台本")),
             "demo": self._demo(number),
+            "judgements": _table(_section(text, "## デモの判定")),
             "markdown": text,
         }
 
@@ -130,6 +150,12 @@ class ScrumState:
             return None
         run = (_section(readme, "## 動かし方") or "").strip().splitlines()
         results = _table(rehearsal)
+        previous = []
+        for p in sorted(root.glob("rehearsal-*.md"), key=lambda p: _round_of(p.name)):
+            text = _read(p)
+            rows = _table(text)
+            previous.append({"round": _round_of(p.name), "rehearsal": text, "images": _images(root, text),
+                             "matched": sum(1 for r in rows if r.get("判定") == "一致"), "total": len(rows)})
         return {
             "path": str(root.relative_to(self.project)),
             "readme": readme, "rehearsal": rehearsal,
@@ -137,6 +163,8 @@ class ScrumState:
             "scenes": _table(_section(readme, "## 台本")),
             "results": results,
             "matched": sum(1 for r in results if r.get("判定") == "一致"),
+            "images": _images(root, rehearsal),
+            "previous": previous,
         }
 
     def _team_at(self, when):

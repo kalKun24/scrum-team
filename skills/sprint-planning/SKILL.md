@@ -57,5 +57,5 @@ description: 状態が ready の PBI から容量内でスプリントの対象�
 ```
 
 - 実行ログの「目的」は `design` / `implement` / `rework` / `review` / `demo` / `retro` を使う。
-- `phase` は `execution` → `demo` → `review` → `retrospective` → `closed` と進む。
+- `phase` は `execution` → `demo` → `review` → `retrospective` → `closed` と進む。レビューで PO がデモを差し戻して見せ直すときは、`review` から `execution`（直す）または `demo`（除く）に戻る。
 - 「状態」は `todo` / `design` / `dev` / `review` / `approved` / `blocked` / `accepted` / `rejected` を使う。

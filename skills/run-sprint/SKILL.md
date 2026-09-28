@@ -26,6 +26,6 @@ description: scrum-team のスプリントを1回分、初期設定の確認か�
 4. 状態が `ready` の PBI が無ければ、PO にバックログの追加を依頼して終了する。あれば `scrum-team:sprint-planning` を実行する。
 5. `scrum-team:sprint-execution` を実行する。
 6. `scrum-team:sprint-demo` を実行する。
-7. `scrum-team:sprint-review` を実行する。
+7. `scrum-team:sprint-review` を実行する。PO がデモを差し戻して見せ直すことになったら、`sprint-review` の指示どおり手順5または6に戻り、再び手順7に来る。
 8. `scrum-team:sprint-retrospective` を実行する。
 9. PO に、次のスプリントを続けて回すかを確認する。続ける場合は手順3へ戻る。
