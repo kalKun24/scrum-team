@@ -101,7 +101,7 @@ GitHub Issues・Jira のバックログは、スクラムマスターが書き�
       "SendMessage",
       "Bash(git:*)",
       "Bash(date:*)",
-      "Bash(bash .scrum/demos/:*)",
+      "Bash(bash .scrum/demos/*)",
       "Bash(ls:*)",
       "Bash(mkdir:*)",
       "Bash(npm test:*)"

@@ -42,7 +42,7 @@ class Runner:
             allowed = self._allowed_tools() + [
                 f"Bash(python3 {PLUGIN_ROOT}/skills/team-forming/install_agent.py:*)",
                 "Bash(date:*)",
-                "Bash(bash .scrum/demos/:*)"]
+                "Bash(bash .scrum/demos/*)"]
             if allowed:
                 cmd += ["--allowedTools", *allowed]
             if self.plugin_dir:
