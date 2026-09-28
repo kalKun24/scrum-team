@@ -7,7 +7,7 @@ const SLOT_LABEL = {
 };
 // チーム編成の導入前に使っていた固定の Agent
 const FIXED_SLOT = { designer: "design", developer: "implement", "code-reviewer": "code-review", "security-reviewer": "security-review" };
-const PHASES = [["refinement", "リファインメント"], ["planning", "計画"], ["execution", "実行"], ["review", "レビュー"], ["retrospective", "レトロ"]];
+const PHASES = [["refinement", "リファインメント"], ["planning", "計画"], ["execution", "実行"], ["demo", "デモ準備"], ["review", "レビュー"], ["retrospective", "レトロ"]];
 const VIEWS = [["sprint", "スプリント"], ["board", "ボード"], ["retro", "振り返り"], ["team", "チーム"], ["metrics", "指標"], ["deck", "デッキ"], ["history", "履歴"]];
 const STATE_LABEL = {
   todo: ["未着手", ""], design: ["デザイン中", ""], dev: ["実装中", ""], review: ["レビュー中", ""],
@@ -380,27 +380,35 @@ function liveState() {
 }
 function inboxCount() { return liveState().ask ? 1 : 0; }
 
+function demoSummary(demo) {
+  if (!demo) return "";
+  const total = (demo.results || []).length;
+  return `${demo.command ? `<div class="notice-card" style="background:var(--top);color:#E6E3DC;border:0"><div class="small" style="color:#A09B91">動かし方</div><code style="color:#E6E3DC">${esc(demo.command)}</code></div>` : ""}
+    ${total ? `<ul class="verdicts">${demo.results.map((r) => { const ok = r["判定"] === "一致";
+      return `<li><span class="${ok ? "ok" : "ng"}">${ok ? CHECK : "!"}</span><span style="flex:1">${inline(r["期待する結果"] || "")}</span><span class="${ok ? "ok" : "ng"}">${esc(r["判定"] || "")}</span></li>`; }).join("")}</ul>` : '<p class="empty">リハーサルの記録はまだ無い。</p>'}`;
+}
+// レビューでは、PBI ごとではなく、デモで見たもの全体を受け入れるかを判断する
 function acceptanceCards(sp, invs) {
   if (!sp || sp.phase !== "review") return "";
   const bl = backlogMap();
-  return sp.pbis.filter((row) => row["状態"] === "approved").map((row) => {
-    const id = row.PBI;
-    const item = bl.get(id) || {};
-    const mine = invs.filter((i) => (i.description || "").includes(id) && !isRetro(i));
-    const reviews = mine.map((i) => ({ i, v: verdictOf(i) })).filter((x) => x.v && slotOf(x.i.role, sp).endsWith("review"));
-    const impl = mine.filter((i) => slotOf(i.role, sp) === "implement").pop();
-    const fromReview = (reviews.find((x) => x.v.tests) || { v: {} }).v.tests;
-    const tests = (impl && [...lastText(impl).matchAll(/Ran (\d+) tests?/g)].map((m) => m[1]).pop()) || fromReview;
-    return `<article class="inbox-card">
-      <div class="kind"><span>受け入れ判定</span><span>承認点 2 / 2</span></div>
-      <div><div class="mono muted">${esc(id)} · ${esc(row.points || item.points || "?")}pt</div><div style="font-size:16px;font-weight:700">${inline(item.title || "")}</div></div>
-      <div class="tiles"><div class="tile"><div class="k">テスト</div><div class="v">${esc(tests || "—")}</div></div>
-        <div class="tile"><div class="k">レビュー</div><div class="v">${reviews.filter((x) => x.v.verdict === "approve").length} / ${reviews.length || "—"}</div></div>
-        <div class="tile"><div class="k">差し戻し</div><div class="v">${esc(row["差し戻し"] || "0")}</div></div></div>
-      <ul class="verdicts">${reviews.map(({ i, v }) => `<li><span class="${v.verdict === "approve" ? "ok" : "ng"}">${v.verdict === "approve" ? CHECK : "!"}</span><span style="flex:1">${esc(i.role)}</span><span class="${v.verdict === "approve" ? "ok" : "ng"}">${v.verdict}</span><span class="muted">must ${v.must} · should ${v.should}</span></li>`).join("")}</ul>
-      <div class="row-gap"><button type="button" class="btn primary big" style="flex:1" data-send="${esc(id)} は受け入れる。">受け入れる</button>
-        <button type="button" class="btn big" data-prefill="${esc(id)} は却下する。理由：">却下して理由を書く</button></div></article>`;
-  }).join("");
+  const demo = sp.demo;
+  const total = demo ? (demo.results || []).length : 0;
+  const approved = sp.pbis.filter((row) => row["状態"] === "approved");
+  const reviews = approved.flatMap((row) => invs.filter((i) => (i.description || "").includes(row.PBI) && !isRetro(i))
+    .map((i) => ({ i, v: verdictOf(i) })).filter((x) => x.v && slotOf(x.i.role, sp).endsWith("review")));
+  const openKey = "demo-full";
+  return `<article class="inbox-card">
+    <div class="kind"><span>デモの受け入れ判定</span><span>承認点 2 / 2</span></div>
+    <div style="font-size:16px;font-weight:700">${inline(sp.goal || "")}</div>
+    <div class="tiles"><div class="tile"><div class="k">リハーサル</div><div class="v">${total ? `${demo.matched} / ${total}` : "—"}</div></div>
+      <div class="tile"><div class="k">PBI</div><div class="v">${approved.length}</div></div>
+      <div class="tile"><div class="k">レビュー</div><div class="v">${reviews.filter((x) => x.v.verdict === "approve").length} / ${reviews.length || "—"}</div></div></div>
+    ${demoSummary(demo)}
+    <div class="small muted">対象：${approved.map((r) => `${esc(r.PBI)} ${inline((bl.get(r.PBI) || {}).title || "")}`).join(" / ")}</div>
+    ${demo ? `<button type="button" class="link-btn" style="text-align:left" data-full="${openKey}">${S.openedFull.has(openKey) ? "台本とリハーサル記録をたたむ" : "台本とリハーサル記録を読む"}</button>
+      ${S.openedFull.has(openKey) ? `<div class="md ask" style="max-height:none">${md(demo.readme || "")}${md(demo.rehearsal || "")}</div>` : ""}` : ""}
+    <div class="row-gap"><button type="button" class="btn primary big" style="flex:1" data-send="デモを受け入れる。">受け入れる</button>
+      <button type="button" class="btn big" data-prefill="デモの次の点が違う：">直してほしい点を書く</button></div></article>`;
 }
 function composerHtml() {
   const { r, error, busy, waiting, ask } = liveState();
@@ -562,7 +570,9 @@ function renderPast(el) {
      <div class="tiles">${counts.map(([l, n]) => `<div class="tile"><div class="k">${l}</div><div class="v">${n}</div></div>`).join("")}</div>`);
   const sel = S.selected && invs.find((i) => i.agent_id === S.selected);
   if (sel) renderDetail($("c3"), sel, sp);
-  else put($("c3"), `retro:${sp.number}`, `<div class="panel pad" style="height:100%;overflow-y:auto"><div class="h2">振り返り<button type="button" class="link link-btn" data-view="retro">全文</button></div><div class="md">${md(sp.retro || "記録は無い。")}</div></div>`);
+  else put($("c3"), `retro:${sp.number}:${[...S.openedFull].join()}`, `${sp.demo ? `<div class="panel pad" style="display:flex;flex-direction:column;gap:10px"><div class="h2">デモ<span class="small muted" style="font-family:inherit;font-weight:400">${esc(sp.demo.path)}</span></div>${demoSummary(sp.demo)}
+      <button type="button" class="link-btn" style="text-align:left" data-full="demo-past">${S.openedFull.has("demo-past") ? "たたむ" : "台本とリハーサル記録を読む"}</button>${S.openedFull.has("demo-past") ? `<div class="md">${md(sp.demo.readme || "")}${md(sp.demo.rehearsal || "")}</div>` : ""}</div>` : ""}
+    <div class="panel pad" style="overflow-y:auto"><div class="h2">振り返り<button type="button" class="link link-btn" data-view="retro">全文</button></div><div class="md">${md(sp.retro || "記録は無い。")}</div></div>`);
 }
 
 // ---------- ボード ----------

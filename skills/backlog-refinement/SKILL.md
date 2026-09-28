@@ -24,4 +24,5 @@ description: 状態が new の PBI を精査し、implement 枠の Agent に見�
    - 受け入れ基準の追記：PO が承認した文面で本文を更新する。
    - 分割：`create` で子 PBI を作り、親を `close_as_split` で閉じる。
    - 見積り：`set_fields` で記録する。
-7. 条件を満たした PBI を `set_status(ready)` にする。PO が保留とした PBI は `new` のまま残す。
+7. `ready` にする PBI ごとに「デモでの確かめ方」（PO が何をすると、何が見えるか）を決め、`comment` に書く。画面に見えにくい変更は、条件を再現して観察できる結果で示す。確かめ方が決められない PBI は、受け入れ基準の不足として PO に聞く。
+8. 条件を満たした PBI を `set_status(ready)` にする。PO が保留とした PBI は `new` のまま残す。

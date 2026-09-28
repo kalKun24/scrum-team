@@ -118,7 +118,25 @@ class ScrumState:
             "pbis": _table(_section(text, "## 対象 PBI")),
             "agent_log": _table(_section(text, "## Agent 実行ログ")),
             "retro": _section(text, "## レトロスペクティブ") or _section(text, "## KPT"),
+            "demo_script": _table(_section(text, "## デモ台本")),
+            "demo": self._demo(number),
             "markdown": text,
+        }
+
+    def _demo(self, number):
+        root = self.root / "demos" / f"sprint-{number}"
+        readme, rehearsal = _read(root / "README.md"), _read(root / "rehearsal.md")
+        if not readme and not rehearsal:
+            return None
+        run = (_section(readme, "## 動かし方") or "").strip().splitlines()
+        results = _table(rehearsal)
+        return {
+            "path": str(root.relative_to(self.project)),
+            "readme": readme, "rehearsal": rehearsal,
+            "command": next((l.strip().strip("`") for l in run if l.strip() and not l.startswith("```")), None),
+            "scenes": _table(_section(readme, "## 台本")),
+            "results": results,
+            "matched": sum(1 for r in results if r.get("判定") == "一致"),
         }
 
     def _team_at(self, when):

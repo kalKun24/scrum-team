@@ -26,9 +26,11 @@
 ## カタログ
 `catalog/` は [VoltAgent/awesome-claude-code-subagents](https://github.com/VoltAgent/awesome-claude-code-subagents)（MIT）の Agent 定義を取り込んだものである。取り込み元のコミットは `catalog/SOURCE.md`、一覧は `catalog/INDEX.md` にある。更新するときは `scripts/update-catalog.py [--ref <branch|sha>]` を実行し、差分を確かめてからコミットする。
 
+各スプリントの成果は、PO が触れて確かめられるデモである。スプリントゴールは「スプリントの終わりに PO が何をして、何を見られるか」で書き、実行の後に「デモ準備」のフェーズを置く。デモ準備では、承認された PBI を統合ブランチにまとめ、`.scrum/demos/sprint-<N>/` に台本（`README.md`）、1コマンドで動くスクリプト（`demo.sh`）、リハーサル記録（`rehearsal.md`）を作る。
+
 スプリント中に PO の判断が必要な場面は次の2点に限る。
-1. スプリント計画：スプリントゴールと対象 PBI の承認
-2. スプリントレビュー：PBI ごとの受け入れ・却下
+1. スプリント計画：スプリントゴール、デモ台本の下書き、対象 PBI の承認
+2. スプリントレビュー：デモで見たもの全体の受け入れ（受け入れたら統合ブランチをマージする）
 
 実装・レビュー・差し戻しは Agent 同士で進める。
 
@@ -49,7 +51,7 @@
    - Markdown：`.scrum/backlog.md` を使う。
    - 接続が必要な場合は、その手順が案内される。
 2. バックログに PBI を書く。書式は `skills/backlog-operations/` の各バックエンドのファイルに従う。
-3. 再び `/scrum-team:run-sprint` を実行する。リファインメント → 計画 → 実行 → レビュー → レトロスペクティブの順に進む。
+3. 再び `/scrum-team:run-sprint` を実行する。リファインメント → 計画 → 実行 → デモ準備 → レビュー → レトロスペクティブの順に進む。
 4. 途中で中断しても、次に `/scrum-team:run-sprint` を実行すれば中断したフェーズから再開する。
 
 ## ダッシュボード（scrum-dash）
@@ -99,6 +101,7 @@ GitHub Issues・Jira のバックログは、スクラムマスターが書き�
       "SendMessage",
       "Bash(git:*)",
       "Bash(date:*)",
+      "Bash(bash .scrum/demos/:*)",
       "Bash(ls:*)",
       "Bash(mkdir:*)",
       "Bash(npm test:*)"
@@ -120,6 +123,7 @@ GitHub バックエンドを使う場合は `Bash(gh issue:*)`・`Bash(gh pr:*)`
   metrics.md             # スプリントごとの指標
   plugin-feedback.md     # レトロで出た scrum-team plugin への改善提案
   designs/<pbi-id>.md    # UI 仕様
+  demos/sprint-<N>/      # デモの台本・実行スクリプト・リハーサル記録
   sprints/sprint-<N>.md  # スプリントの計画・進捗・結果
 ```
 

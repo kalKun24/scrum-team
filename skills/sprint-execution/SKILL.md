@@ -35,7 +35,7 @@ description: 承認済みのスプリント計画に沿って、.scrum/team.md �
    - 全員が `approve`：PBI を `approved` にする。
    - いずれかが `request-changes`：全員の `must` をまとめて同じ implement に差し戻し、差し戻し回数を1増やす。差し戻しは SendMessage で元の developer に送る。送れない場合は、新しい developer を isolation なしで起動し、既存の作業ディレクトリで作業させる。
    - 差し戻しが3回に達しても承認されない：PBI を `blocked` にし、未解消の指摘を記録する。
-6. 全 PBI が `approved` か `blocked` になったら、スプリントファイルの `phase` を `review` にする。
+6. 全 PBI が `approved` か `blocked` になったら、スプリントファイルの `phase` を `demo` にする。
 
 ## 記録に残す事項
 - 各 Agent の報告の `assumptions` と `unresolved`

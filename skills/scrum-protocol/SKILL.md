@@ -25,6 +25,8 @@ description: scrum-team のチームに編成された Agent が守る共通の�
 - 実コマンドでの動作確認は、テストの中で一時ディレクトリを使って行う。
 - 仮定では進められないほど前提が欠けている場合は、実装せず `blocked` として報告する。
 - 差し戻しを受けた場合は、`must` をすべて解消し、`should` は対応したか否かを報告する。
+- 報告の `demo` に、デモでその PBI を確かめる方法（操作と見える結果）を書く。
+- デモの作成を依頼された場合は、`sprint-demo` の format.md の書式でデモを書く。
 - サーバ側の変更には `backend-implementing`、UI の変更には `frontend-implementing` の基準を適用する。
 
 ### デザイン（design）

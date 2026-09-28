@@ -43,6 +43,7 @@ description: 対象プロジェクトで scrum-team を使い始めるための�
 - 既存を含むすべてのテストが通る
 - code-review 枠と security-review 枠（extra-review 枠がいればそれも）の Agent が approve している
 - UI を含む PBI は UI 仕様と一致している
+- スプリントのデモの台本どおりに動く（リハーサルで確かめる）
 ```
 
 ## 作成するその他のファイル

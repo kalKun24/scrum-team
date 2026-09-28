@@ -19,11 +19,13 @@ description: scrum-team のスプリントを1回分、初期設定の確認か�
    - 続けて、`.scrum/team.md` が無ければ `scrum-team:team-forming` を実行する。
 2. 最新の `.scrum/sprints/sprint-<N>.md` を読み、`phase` が `closed` 以外なら、そのフェーズから再開する。
    - `execution` → 手順5
-   - `review` → 手順6
-   - `retrospective` → 手順7
+   - `demo` → 手順6
+   - `review` → 手順7
+   - `retrospective` → 手順8
 3. 状態が `new` の PBI があれば `scrum-team:backlog-refinement` を実行する。
 4. 状態が `ready` の PBI が無ければ、PO にバックログの追加を依頼して終了する。あれば `scrum-team:sprint-planning` を実行する。
 5. `scrum-team:sprint-execution` を実行する。
-6. `scrum-team:sprint-review` を実行する。
-7. `scrum-team:sprint-retrospective` を実行する。
-8. PO に、次のスプリントを続けて回すかを確認する。続ける場合は手順3へ戻る。
+6. `scrum-team:sprint-demo` を実行する。
+7. `scrum-team:sprint-review` を実行する。
+8. `scrum-team:sprint-retrospective` を実行する。
+9. PO に、次のスプリントを続けて回すかを確認する。続ける場合は手順3へ戻る。

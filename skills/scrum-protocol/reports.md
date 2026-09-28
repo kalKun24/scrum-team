@@ -10,6 +10,7 @@ summary: <変更概要>
 tests: <実行したコマンドと結果>
 assumptions:
   - <置いた仮定>
+demo: <デモでの確かめ方。操作と見える結果>
 unresolved:
   - <未解決事項>
 ```
