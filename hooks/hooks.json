@@ -1,0 +1,4 @@
+{
+  "description": "scrum ペイン：/scrum と、.scrum/ の状態・チームの Agent・PO の判定の表示",
+  "modules": ["./register.ts"]
+}

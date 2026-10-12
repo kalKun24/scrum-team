@@ -1,1 +1,4 @@
 __pycache__/
+# Claude Code が Mod を読み込むときに書き出す型定義
+.claude-plugin/types/
+tsconfig.json
